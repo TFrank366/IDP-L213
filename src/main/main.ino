@@ -13,6 +13,7 @@ struct Motor {
 
 struct Led {
   int pin;
+  bool state = false;
 };
 
 
@@ -24,6 +25,7 @@ void setup() {
   Motor m1{m1Pin};
   Motor m2{m2Pin};
   //create led structs
+  Led oLed{oLedPin};
 }
 
 // supply motor
@@ -37,8 +39,21 @@ void stopMotors() {
   // stop led flashing
 }
 
+unsigned long previousMillis = 0;
+unsigned long interval = 500;
 
 void loop() {
   // put your main code here, to run repeatedly:
+  
+  unsigned long currentMillis = millis();
+
+  if (currentMillis - previousMillis >= interval) {
+    // save the last time you blinked the LED
+    previousMillis = currentMillis;
+
+    // set the LED with the ledState of the variable:
+    digitalWrite(oLed.pin, !oLed.state);
+    oLed.state = !oLed.state;
+  
 
 }
