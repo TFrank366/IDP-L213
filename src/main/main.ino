@@ -1,17 +1,27 @@
 // main.cpp
 // the main program file for the arduino
-#include <Servo.h>;
-#include <Wire.h>;
-#include <Adafruit_MotorShield.h>;
+#include <Servo.h>
+#include <Wire.h>
+#include <Adafruit_MotorShield.h>
 
-int oLedPin = 2;
-int rLedPin = 3;
-int gLedPin = 4;
-int servoPin = 5;
+// number of each pin =========================
+const int oLedPin =   2;
+const int rLedPin =   3;
+const int gLedPin =   4;
+const int servoPin =  5;
+const int os1Pin =    0;
+const int os2Pin =    7;
+const int os3Pin =    8;
+// ============================================
 
 struct Motor {
   int pin;
   int currSpeed;
+};
+
+struct Sensor {
+  int pin;
+  int value;
 };
 
 struct Led {
@@ -23,42 +33,53 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *m1 = AFMS.getMotor(1);
 Adafruit_DCMotor *m2 = AFMS.getMotor(2);
 
-// creat output control structs
+// create led structs
 Led oLed;
+Led rLed;
+Led gLed;
+
+//create sensor structs 
+//optoswitches
+Sensor os1;
+Sensor os2;
+Sensor os3;
 
 bool motorsActive = false;
 
 void setup() {
-  // set the correct pins to output
+  // setup serial link
+  Serial.begin(9600);
+
   //init led structs
   pinMode(oLedPin, OUTPUT);
   oLed = {.pin = oLedPin};
+  pinMode(rLedPin, OUTPUT);
+  rLed = {.pin = rLedPin};
+  pinMode(gLedPin, OUTPUT);
+  gLed = {.pin = gLedPin};
 
-  AFMS.begin();
-  m1->setSpeed(200);
-  m1->run(FORWARD);
-  m2->setSpeed(200);
-  m2->run(FORWARD);
-//  // create servo motor
-//  Servo grabberServo
-//  grabberServo.attach(servoPin)
+  // init the sensors
+  pinMode(os1Pin, INPUT);
+  pinMode(os2Pin, INPUT);
+  pinMode(os3Pin, INPUT);
   
+
+  // initialise the motors
+  AFMS.begin();
+  m1->setSpeed(100);
+  m2->setSpeed(100);
 }
 
 // supply motor
 
-void activateMotors(){
+void startMotors(){
   // active led flashing if it's not already
   motorsActive = true;
   m1->run(FORWARD);
   m2->run(FORWARD);
-  std::cout<<"motors started";
+  Serial.println("motors started");
 }
 
-// set the speed
-void setMotorSpeed(Motor m, int s) {
-  
-}
 void stopMotors() {
   // stop led flashing
   m1->run(RELEASE);
@@ -66,6 +87,7 @@ void stopMotors() {
   motorsActive = false;
   digitalWrite(oLed.pin, false);
   oLed.state = false;
+  Serial.println("motors stopped");
 }
 
 unsigned long previousMillis = 0;
@@ -73,14 +95,22 @@ unsigned long interval = 500;
 unsigned long elapsedTime = 0;
 
 
-void activateMotors();
-
 void loop() {
   // put your main code here, to run repeatedly:
   unsigned long currentMillis = millis();
-  if (currentMillis > 5000) {
-    void stopMotors();
+//  if (currentMillis > 10000 && motorsActive) {
+//    stopMotors();
+//  }
+
+
+  int light = analogRead(os1.pin);
+  //Serial.println(String(light));
+  if (light < 100){
+    Serial.println("white");
+  } else {
+    Serial.println("black");
   }
+  
   
   
   if (motorsActive) {
