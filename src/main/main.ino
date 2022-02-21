@@ -1,39 +1,50 @@
 // main.cpp
 // the main program file for the arduino
-const int m1Pin = 0;
-const int m2Pin = 1;
-const int oLedPin = 2;
-const int rLedPin = 3;
-const int gLedPin = 4;
+int m1Pin = 0;
+int m2Pin = 1;
+int oLedPin = 2;
+int rLedPin = 3;
+int gLedPin = 4;
+int servoPin = 5;
 
 struct Motor {
   int pin;
-  int currSpeed = 0;
+  int currSpeed;
 };
 
 struct Led {
   int pin;
-  bool state = false;
+  bool state;
 };
 
+Motor m1;
+Motor m2;
+Led oLed;
 
 void setup() {
   // set the correct pins to output
   pinMode(m1Pin, OUTPUT);
   pinMode(m2Pin, OUTPUT);
   // create motor structs
-  Motor m1{m1Pin};
-  Motor m2{m2Pin};
+  m1 = {m1Pin, 0};
+  m2 = {m2Pin, 0};
   //create led structs
-  Led oLed{oLedPin};
+  pinMode(oLedPin, OUTPUT);
+  oLed = {.pin = oLedPin};
+
+//  // create servo motor
+//  Servo grabberServo
+//  grabberServo.attach(servoPin)
+  
 }
 
 // supply motor
-void setMotorSpeed(Motor m, int s) {
 
-}
 void activeMotors(){
   // active led flashing if it's not already
+}
+// set the speed
+void setMotorSpeed(Motor m, int s) {
 }
 void stopMotors() {
   // stop led flashing
@@ -54,6 +65,5 @@ void loop() {
     // set the LED with the ledState of the variable:
     digitalWrite(oLed.pin, !oLed.state);
     oLed.state = !oLed.state;
-  
-
+  }
 }
