@@ -1,5 +1,13 @@
+#include <Adafruit_CircuitPlayground.h>
+#include <Adafruit_Circuit_Playground.h>
+
 // main.cpp
 // the main program file for the arduino
+#include <Servo.h>;
+#include <Wire.h>;
+#include <Adafruit_MotorShield.h>;
+#include "utility/Adafruit_MS_PWMServoDriver.h"
+
 int m1Pin = 0;
 int m2Pin = 1;
 int oLedPin = 2;
@@ -17,6 +25,10 @@ struct Led {
   bool state;
 };
 
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+Adafruit_DCMotor *myMotor = AFMS.getMotor(1);
+
+// creat output control structs
 Motor m1;
 Motor m2;
 Led oLed;
@@ -25,13 +37,18 @@ void setup() {
   // set the correct pins to output
   pinMode(m1Pin, OUTPUT);
   pinMode(m2Pin, OUTPUT);
-  // create motor structs
+  // init motor structs
   m1 = {m1Pin, 0};
   m2 = {m2Pin, 0};
-  //create led structs
+  //init led structs
   pinMode(oLedPin, OUTPUT);
   oLed = {.pin = oLedPin};
 
+  AFMS.begin()
+  myMotor->setSpeed(50);
+  myMotor->run(FORWARD);
+  delay(2000);
+  myMotor->setSpeed(0);
 //  // create servo motor
 //  Servo grabberServo
 //  grabberServo.attach(servoPin)
