@@ -3,7 +3,7 @@
 
 // within pin numbers setup loop
 const int csbPin = 9 // based on the actual physical pin number, csb is in fact a light detecting resistor (LDR) that will drop different voltage based on light levels
-const int csrPin = 10 // based on the actual physical pin number, same as above
+const int csrPin = 10 // based on the actual physical pin number, same as above. Subject to change
 
 // if a blue object is detected, the blue filter won't pick up anything (blue light filtered out) but the red filter will, so the blue sensor must read true if a blue object is seen, 
 // and thus has a red filter in front of it, while the redsensor must read false and thus has a blue filter in front of it
