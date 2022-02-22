@@ -5,14 +5,19 @@
 #include <Adafruit_MotorShield.h>
 
 // number of each pin =========================
-const int oLedPin =   2;
+// port 2 is borked
+const int oLedPin =   5;
 const int rLedPin =   3;
 const int gLedPin =   4;
-const int servoPin =  5;
-const int os1Pin =    0;
-const int os2Pin =    7;
-const int os3Pin =    8;
+const int servoPin =  9;
+const int os1Pin =    0;  // analog pin #
+const int os2Pin =    1;  // analog pin #
+const int os3Pin =    2;  // analog pin #
 // ============================================
+const int fSpeed =  100;  // motor speed for general movement
+// ============================================
+
+enum Dir {LEFT, RIGHT};
 
 struct Motor {
   int pin;
@@ -29,9 +34,19 @@ struct Led {
   bool state;
 };
 
+struct TurnCommand {
+  Dir dir;
+  bool active;
+  int amount;             // the angular speed of the turn in some units
+  unsigned long start;
+  unsigned long duration;
+};
+
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *m1 = AFMS.getMotor(1);
 Adafruit_DCMotor *m2 = AFMS.getMotor(2);
+
+Servo servo;
 
 // create led structs
 Led oLed;
@@ -45,6 +60,7 @@ Sensor os2;
 Sensor os3;
 
 bool motorsActive = false;
+int currSpeed = 0; // keep a track of the current speed
 
 void setup() {
   // setup serial link
@@ -59,18 +75,32 @@ void setup() {
   gLed = {.pin = gLedPin};
 
   // init the sensors
+  os1.pin = os1Pin;
+  os2.pin = os2Pin;
+  os3.pin = os3Pin;
   pinMode(os1Pin, INPUT);
   pinMode(os2Pin, INPUT);
   pinMode(os3Pin, INPUT);
+
   
 
   // initialise the motors
   AFMS.begin();
-  m1->setSpeed(100);
-  m2->setSpeed(100);
+  setMotorsStraight(fSpeed);
+
+  // init the servo
+  servo.attach(servoPin);
+
+  //start moving forward
+  startMotors();
 }
 
-// supply motor
+
+void setMotorsStraight(int mSpeed) {
+  currSpeed = mSpeed;
+  m1->setSpeed(mSpeed);
+  m2->setSpeed(mSpeed);
+}
 
 void startMotors(){
   // active led flashing if it's not already
@@ -90,29 +120,107 @@ void stopMotors() {
   Serial.println("motors stopped");
 }
 
+// 0 is black 1 is white
+int lightToCol(int light) {
+  if (light < 150){
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+//                           4  2  1
+// returns an int with bits (s3 s2 s1)
+// line on left => 100 => 4
+int getColsVal(Sensor s1, Sensor s2, Sensor s3) {
+  int colsVal = 0;
+  colsVal |= lightToCol(analogRead(s1.pin));
+  colsVal |= lightToCol(analogRead(s2.pin)) << 1;
+  colsVal |= lightToCol(analogRead(s3.pin)) << 2;
+  return colsVal;
+}
+
+TurnCommand getTurnCommand(int colsVal){
+    unsigned long nowMillis = millis();
+    TurnCommand turn;
+    Serial.println(colsVal);
+    switch (colsVal) {
+      // line only on right sensor
+      // have to turn right
+      case 1:
+      case 3:  
+        Serial.println("right");
+        turn = {RIGHT, true, 20, nowMillis, 1000};
+        break;
+       // line only on left sensor
+       // have to turn left
+       case 4:
+       case 6:
+        Serial.println("left");
+        turn = {LEFT, true, 20, nowMillis, 1000};
+        break;
+       default:
+        break;
+    }
+    return turn;
+}
+
+                
+// robot is setup m1---m2
+//                 \ ^ /
+//                  \o/
+void startTurn(TurnCommand turn) {
+  switch(turn.dir) {
+    case LEFT:
+      m2->setSpeed(int(currSpeed + turn.amount/2));
+      m1->setSpeed(int(currSpeed - turn.amount/2));
+      break;
+    case RIGHT:
+      m2->setSpeed(int(currSpeed - turn.amount/2));
+      m1->setSpeed(int(currSpeed + turn.amount/2));
+      break;
+  }
+}
+
+void printVals(Sensor s1, Sensor s2, Sensor s3) {
+  Serial.print(lightToCol(analogRead(s1.pin)));
+  Serial.print(lightToCol(analogRead(s2.pin)));
+  Serial.println(lightToCol(analogRead(s3.pin)));
+}
+
 unsigned long previousMillis = 0;
 unsigned long interval = 500;
 unsigned long elapsedTime = 0;
 
 
+TurnCommand turn;
+
 void loop() {
   // put your main code here, to run repeatedly:
   unsigned long currentMillis = millis();
-//  if (currentMillis > 10000 && motorsActive) {
-//    stopMotors();
+
+  
+//  // if the timer of the current turn command has elapsed, deacivate it
+//  if (currentMillis > turn.start + turn.duration && turn.active) {
+//    // set the active flag to off
+//    turn.active = false;
+//    // stop turning and move straight
+//    //setMotorsStraight(fSpeed);
 //  }
+//  
+//  // if the robot is currently turning, dont worry about this
+//  if (!turn.active){
+//    int colsVal = getColsVal(os1, os2, os3);
+//    //Serial.println(colsVal);
+//    //Serial.println(colsVal);//std::bitset<3>(colsVal))
+//    turn = getTurnCommand(colsVal);
+//    turn.active = true;
+//    //startTurn(turn);
+//  }
+  printVals(os1, os2, os3);
 
 
-  int light = analogRead(os1.pin);
-  //Serial.println(String(light));
-  if (light < 100){
-    Serial.println("white");
-  } else {
-    Serial.println("black");
-  }
-  
-  
-  
+  // led flashes if the motors are active
   if (motorsActive) {
     if (currentMillis - previousMillis >= interval) {
       // save the last time you blinked the LED
