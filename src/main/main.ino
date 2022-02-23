@@ -1,7 +1,6 @@
 // main.cpp
 // the main program file for the arduino
 #include <Servo.h>
-#include <Wire.h>
 #include <Adafruit_MotorShield.h>
 
 // number of each pin =========================
@@ -15,7 +14,7 @@ const int os1Pin =    0;  // analog pin #
 const int os2Pin =    1;  // analog pin #
 const int os3Pin =    2;  // analog pin #
 // ============================================
-const int fSpeed =  100;  // motor speed for general movement
+const int fSpeed =  150;  // motor speed for general movement
 // ============================================
 
 enum Dir {LEFT, RIGHT};
@@ -66,6 +65,13 @@ int currSpeed = 0; // keep a track of the current speed
 void setup() {
   // setup serial link
   Serial.begin(9600);
+  
+  pinMode(NINA_RESETN, OUTPUT);         
+  digitalWrite(NINA_RESETN, LOW);
+  SerialNina.begin(115200);
+
+  SerialNina.write(SerialNina.read());
+  Serial.println("hello world");
 
   //init led structs
   pinMode(oLedPin, OUTPUT);
@@ -87,13 +93,15 @@ void setup() {
 
   // initialise the motors
   AFMS.begin();
-  setMotorsStraight(fSpeed);
+  
 
   // init the servo
   servo.attach(servo1Pin);
 
-  //start moving forward
-  startMotors();
+  do {
+    // stall until serial connection and sent start command
+  } while (Serial.available() == 0);
+  setMotorsStraight(fSpeed);
 }
 
 
@@ -101,6 +109,7 @@ void setMotorsStraight(int mSpeed) {
   currSpeed = mSpeed;
   m1->setSpeed(mSpeed);
   m2->setSpeed(mSpeed);
+  startMotors();
   //Serial.println("motors same");
 }
 
@@ -151,18 +160,23 @@ TurnCommand getTurnCommand(int colsVal){
       // have to turn right
       case 1:
       case 3:  
-        Serial.println("right");
-        turn = {RIGHT, true, 50, nowMillis, 100};
+        //Serial.println("right");
+        turn = {RIGHT, true, 100, nowMillis, 100};
         break;
        // line only on left sensor
        // have to turn left
        case 4:
        case 6:
-        Serial.println("left");
-        turn = {LEFT, true, 50, nowMillis, 100};
+        //Serial.println("left");
+        turn = {LEFT, true, 100, nowMillis, 100};
+        break;
+       case 5:
+       case 7:
+        stopMotors();
+        turn.active = false;
         break;
        default:
-       turn.active = false;
+        turn.active = false;
         break;
     }
     return turn;
@@ -173,33 +187,57 @@ TurnCommand getTurnCommand(int colsVal){
 //                 \ ^ /
 //                  \o/
 void startTurn(TurnCommand turn) {
+  int speedPlus = min(currSpeed + turn.amount/2, 255);
+  int speedMinus = currSpeed - turn.amount/2;
   switch(turn.dir) {
     case LEFT:
-      m2->setSpeed(int(currSpeed + turn.amount/2));
-      m1->setSpeed(max(int(currSpeed - turn.amount/2), 0)); // set to 0 if its too low TEMP
+      m2->setSpeed(speedPlus);
+      m1->setSpeed(abs(speedMinus)); // set to 0 if its too low TEMP
+      if (speedMinus < 0) {
+        m1->run(BACKWARD);
+      }
       break;
     case RIGHT:
-      m2->setSpeed(int(currSpeed - turn.amount/2));
-      m1->setSpeed(max(int(currSpeed + turn.amount/2), 0)); // set to 0 if its too low TEMP
+      m2->setSpeed(abs(speedMinus));
+      m1->setSpeed(speedPlus); // set to 0 if its too low TEMP
+      if (speedMinus < 0) {
+        m2->run(BACKWARD);
+      }
       break;
   }
 }
 
 void printVals(Sensor s1, Sensor s2, Sensor s3) {
-  Serial.print(lightToCol(analogRead(s1.pin)));
-  Serial.print(lightToCol(analogRead(s2.pin)));
-  Serial.println(lightToCol(analogRead(s3.pin)));
+  logint(lightToCol(analogRead(s3.pin)));
+  logint(lightToCol(analogRead(s2.pin)));
+  loglnint(lightToCol(analogRead(s1.pin)));
+}
+
+void logln(char* s) {
+  SerialNina.println(s);
+  Serial.println(s);
+}
+void loglnint(int i) {
+  SerialNina.println(i);
+  Serial.println(i);
+}
+void logint(int i) {
+  SerialNina.print(i);
+  Serial.print(i);
 }
 
 unsigned long previousMillis = 0;
+unsigned long lastLog = 0; // time of last log
 unsigned long interval = 500;
 unsigned long elapsedTime = 0;
 
 
 TurnCommand turn;
 
+bool contacted = false;
+
 void loop() {
-  // put your main code here, to run repeatedly:
+//  // put your main code here, to run repeatedly:
   unsigned long currentMillis = millis();
 
   servo.write(min(180, int(currentMillis/100)));
@@ -217,14 +255,22 @@ void loop() {
   // if the robot is currently turning, dont worry about this
   if (!turn.active){
     int colsVal = getColsVal(os1, os2, os3);
-    //Serial.println(colsVal);
-    //Serial.println(colsVal);//std::bitset<3>(colsVal))
     turn = getTurnCommand(colsVal);
     if (turn.active) {
       startTurn(turn);
     }
     
-    printVals(os1, os2, os3);
+    if(currentMillis - lastLog > 500) {
+      lastLog = currentMillis;
+      printVals(os1, os2, os3);
+      if (turn.active) {
+        if (turn.dir == LEFT) {
+          logln("left");
+        } else if (turn.dir == RIGHT) {
+          logln("right");
+        }
+      }
+    }
   }
   
 
