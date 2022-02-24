@@ -180,7 +180,7 @@ int getLineVal(Sensor s1, Sensor s2, Sensor s3) {
 
 // gets the colour of what is in front of the colour sensor
 // won't be accurate unless depth sensor (os4) reads < 300
-Color getColorVal(Led wLed, Sensor ) { // function that returns "Color" class, Sensor not yet known hence not written
+Color getColorVal(Led wLed, Sensor rLDR, Sensor bLDR) { // function that returns "Color" class
   digitalWrite(wLed.pin, true);
   delay(100); // delay to allow values to stabilise, needs testing
   int bVal = analogRead(bLDR.pin);
@@ -188,7 +188,7 @@ Color getColorVal(Led wLed, Sensor ) { // function that returns "Color" class, S
   delay(100); // test whether this is needed
   digitalWrite(wLed.pin, false);
   if (bVal < rVal){
-    return BLUE; // (in main loop after Color is found) include static int for green LED output while the delay timer is running? same for red. Or should include in here?
+    return BLUE; 
   } else {
     return RED;  
   }
@@ -236,7 +236,17 @@ void loop() {
   
   if (robotStopped) {
     setMotors(stopped.getMotorSetting());
-    // if getColorVal == 
+    // if (getColorVal(wLed, rLDR, bLDR) == BLUE) {
+      // digitalWrite(gLed.pin, true);
+      // delay(5100);
+      // digitalWrite(gled.pin, false);
+      // }
+     // if (getColorVal(wLed, rLDR, bLDR) == RED) {
+      // digitalWrite(rLed.pin, true);
+      // delay(5100);
+      // digitalWrite(rled.pin, false);
+      // }
+      
   } else {
     int lineVal = getLineVal(os1, os2, os3);
     l.logln(getValsString(os1, os2, os3));
