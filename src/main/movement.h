@@ -35,6 +35,7 @@ namespace Movement{
       int turnAmount;
       unsigned long turnStart;
       unsigned long turnDuration;
+      void setParams(int, int, unsigned long);
       MotorSetting getMotorSetting (int);
   };
 }

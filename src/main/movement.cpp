@@ -13,6 +13,11 @@ MotorSetting FollowLine::getMotorSetting(int cols) {
   unsigned long nowMillis = millis();
   // create new motorsetting struct
   MotorSetting mSetting;
+  // if both are on then stop regardless of whether a turn is in progress
+//  if (cols == 0b101 || cols == 0b111) {
+//    mSetting = {.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
+//    return mSetting;
+//  }
   if (!turning || nowMillis - turnStart > turnDuration) {
     // if there is not a turn taking place or it has elapsed
 
@@ -25,8 +30,8 @@ MotorSetting FollowLine::getMotorSetting(int cols) {
     switch (cols) {
       // line only on right sensor
       // have to turn right
-      case 1:
-      case 3:  
+      case 0b001:
+      case 0b011:  
         mSetting = {.speeds = {speedPlus, abs(speedMinus)}, .directions = {FORWARD, FORWARD}};
         if (speedMinus < 0) {mSetting.directions[1] = BACKWARD;};
         turning = true;
@@ -36,18 +41,13 @@ MotorSetting FollowLine::getMotorSetting(int cols) {
         
        // line only on left sensor
        // have to turn left
-       case 4:
-       case 6:
+       case 0b100:
+       case 0b110:
         mSetting = {.speeds = {abs(speedMinus), speedPlus}, .directions = {FORWARD, FORWARD}};
         if (speedMinus < 0) {mSetting.directions[0] = BACKWARD;};
         turning = true;
         turnStart = nowMillis;
         currentTurn = mSetting;
-        break;
-        
-       case 5:
-       case 7:
-        mSetting = {.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
         break;
         
        default:
@@ -59,6 +59,12 @@ MotorSetting FollowLine::getMotorSetting(int cols) {
     mSetting = currentTurn;
   }
   return mSetting;
+}
+
+void FollowLine::setParams (int fS, int tAmount, unsigned long tDuration) {
+  fSpeed = fS;
+  turnAmount = tAmount;
+  turnDuration = tDuration;
 }
 
 FollowLine::FollowLine (int fS, int tAmount, unsigned long tDuration) {
