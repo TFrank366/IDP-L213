@@ -21,10 +21,17 @@ const int os1Pin =          0;  // analogue pin #
 const int os2Pin =          1;  // analogue pin #
 const int os3Pin =          2;  // analogue pin #
 // colour sensor
+<<<<<<< Updated upstream
 const int bLDRPin =        A0;  // Blue colour LDR voltage (goes down with more light)
 const int rLDRPin =        A1;  // Red colour LDR voltage
 const int os4Pin =         A2;  // OPB704 Voltage (goes down with decreasing distance)
 const int wLedPin =         9;  // Analog output pin that the LED is attached to
+=======
+const int bLDRPin =         3;  // Blue colour LDR voltage (goes down with more light)        TBD
+const int rLDRPin =         4;  // Red colour LDR voltage                                     TBD
+const int os4Pin =          5;  // OPB704 Voltage (goes down with decreasing distance)        TBD
+const int wLedPin =         6;  // Analog output pin that the LED is attached to              TBD
+>>>>>>> Stashed changes
 // ==============================================================================================
 const int fSpeed =        200; // motor speed for general movement
 // ==============================================================================================
@@ -221,6 +228,32 @@ void commandHandler(String command) {
     robotStopped = true;
   } else if (command == "go" || command == "g") {
     robotStopped = false;
+<<<<<<< Updated upstream
+=======
+  } else if (command.substring(0, 2) == "lf") {
+    // line following parameter change on the fly
+    String params = command.substring(2);
+    // contains all the parameters separated by spaces
+    params.trim();
+    
+    int i = 0;
+    while (params[i] != " ") {i++;}
+    String forwardSpeedStr = params.substring(0, i);
+
+    // trim out the first number and space
+    params = params.substring(i+1);
+    i = 0;
+    while (params[i] != " ") {i++;}
+    String turnAmountStr = params.substring(0, i);
+
+    // trim out the first number and space
+    String turnDurationStr = params.substring(i+1);
+    
+    // modify the line following algorithm with the received parameters
+    lineFollower.fSpeed = (int)forwardSpeedStr;
+    lineFollower.turnAmount = (int)turnAmountStr;
+    lineFollower.turnDuration = (unsigned long)turnDuration;
+>>>>>>> Stashed changes
   }
 }
 
@@ -246,7 +279,11 @@ void loop() {
       // delay(5100);
       // digitalWrite(rled.pin, false);
       // }
+<<<<<<< Updated upstream
       
+=======
+
+>>>>>>> Stashed changes
   } else {
     int lineVal = getLineVal(os1, os2, os3);
     l.logln(getValsString(os1, os2, os3));
