@@ -21,9 +21,9 @@ const int os1Pin =          0;  // analogue pin #
 const int os2Pin =          1;  // analogue pin #
 const int os3Pin =          2;  // analogue pin #
 // colour sensor
-const int bLDRPin =         3;  // Blue colour LDR voltage (goes down with more light)        TBD
-const int rLDRPin =         4;  // Red colour LDR voltage                                     TBD
-const int os4Pin =          5;  // OPB704 Voltage (goes down with decreasing distance)        TBD
+const int bLDRPin =         4;  // Blue colour LDR voltage (goes down with more light)        TBD
+const int rLDRPin =         5;  // Red colour LDR voltage                                     TBD
+const int os4Pin =          3;  // OPB704 Voltage (goes down with decreasing distance)        TBD
 const int wLedPin =         6;  // Analog output pin that the LED is attached to              TBD
 // ==============================================================================================
 const int fSpeed =        200; // motor speed for general movement
@@ -108,17 +108,11 @@ void setup() {
   wLed = {.pin = wLedPin};
 
   // init the sensors
-  //pinMode(os1Pin, INPUT);
   os1.pin = os1Pin;
-  //pinMode(os2Pin, INPUT);
   os2.pin = os2Pin;
-  //pinMode(os3Pin, INPUT);
   os3.pin = os3Pin;
-  //pinMode(os4Pin, INPUT);
   os4.pin = os4Pin;
-  //pinMode(bLDRPin, INPUT);
   bLDR.pin = bLDRPin;
-  //pinMode(rLDRPin, INPUT);
   rLDR.pin = rLDRPin;
 
   // initialise the motors
@@ -183,10 +177,10 @@ int getLineVal(Sensor s1, Sensor s2, Sensor s3) {
 // won't be accurate unless depth sensor (os4) reads < 300
 Color getColorVal(Led wLed, Sensor bLDR, Sensor rLDR) {
   digitalWrite(wLed.pin, true);
-  delay(100); // delay to allow values to stabilise, needs testing
+  //delay(100); // delay to allow values to stabilise, needs testing
   int bVal = analogRead(bLDR.pin);
   int rVal = analogRead(rLDR.pin);
-  delay(100); // test whether this is needed
+  //delay(100); // test whether this is needed
   digitalWrite(wLed.pin, false);
   if (bVal < rVal){
     return BLUE;
@@ -224,27 +218,23 @@ void commandHandler(String command) {
     robotStopped = false;
   } else if (command.substring(0, 2) == "lf") {
     // line following parameter change on the fly
-    String params = command.substring(2);
+    String params = command.substring(3);
     // contains all the parameters separated by spaces
-    params.trim();
     
-    int i = 0;
-    while (params[i] != " ") {i++;}
-    String forwardSpeedStr = params.substring(0, i);
+    String forwardSpeedStr = params.substring(0, params.indexOf(" "));
+    l.logln(forwardSpeedStr);
+
+    String turnAmountStr = params.substring(params.indexOf(" ") + 1, params.lastIndexOf(" "));
+    l.logln(turnAmountStr);
 
     // trim out the first number and space
-    params = params.substring(i+1);
-    i = 0;
-    while (params[i] != " ") {i++;}
-    String turnAmountStr = params.substring(0, i);
-
-    // trim out the first number and space
-    String turnDurationStr = params.substring(i+1);
+    String turnDurationStr = params.substring(params.lastIndexOf(" ") + 1);
+    l.logln(turnDurationStr);
     
     // modify the line following algorithm with the received parameters
-    lineFollower.fSpeed = (int)forwardSpeedStr;
-    lineFollower.turnAmount = (int)turnAmountStr;
-    lineFollower.turnDuration = (unsigned long)turnDuration;
+    lineFollower.fSpeed = forwardSpeedStr.toInt();
+    lineFollower.turnAmount = turnAmountStr.toInt();
+    lineFollower.turnDuration = (unsigned long)turnDurationStr.toInt();
   }
 }
 
@@ -261,21 +251,25 @@ void loop() {
   // the main movement code 
   if (robotStopped) {
     setMotors(stopped.getMotorSetting());
-    // if getColorVal == 
-    // if (getColorVal(wLed, rLDR, bLDR) == BLUE) {
-      // digitalWrite(gLed.pin, true);
-      // delay(5100);
-      // digitalWrite(gled.pin, false);
-      // }
-     // if (getColorVal(wLed, rLDR, bLDR) == RED) {
-      // digitalWrite(rLed.pin, true);
-      // delay(5100);
-      // digitalWrite(rled.pin, false);
-      // }
+    if (analogRead(os4.pin) < 200) {
+      Color blockCol = getColorVal(wLed, rLDR, bLDR);
+      if (blockCol == BLUE) {
+        l.logln("blue");
+        digitalWrite(gLed.pin, true);
+        delay(5100);
+        digitalWrite(gLed.pin, false);
+      } else {
+        l.logln("red");
+        digitalWrite(rLed.pin, true);
+        delay(5100);
+        digitalWrite(rLed.pin, false);
+      }
+    }
+
 
   } else {
     int lineVal = getLineVal(os1, os2, os3);
-    l.logln(getValsString(os1, os2, os3));
+    //l.logln(getValsString(os1, os2, os3));
     setMotors(forward.getMotorSetting());
     //setMotors(lineFollower.getMotorSetting(lineVal));
   }
