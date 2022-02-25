@@ -21,10 +21,10 @@ const int os1Pin =          0;  // analogue pin #
 const int os2Pin =          1;  // analogue pin #
 const int os3Pin =          2;  // analogue pin #
 // colour sensor
-const int bLDRPin =        A0;  // Blue colour LDR voltage (goes down with more light)
-const int rLDRPin =        A1;  // Red colour LDR voltage
-const int os4Pin =         A2;  // OPB704 Voltage (goes down with decreasing distance)
-const int wLedPin =         9;  // Analog output pin that the LED is attached to
+const int bLDRPin =         3;  // Blue colour LDR voltage (goes down with more light)        TBD
+const int rLDRPin =         4;  // Red colour LDR voltage                                     TBD
+const int os4Pin =          5;  // OPB704 Voltage (goes down with decreasing distance)        TBD
+const int wLedPin =         6;  // Analog output pin that the LED is attached to              TBD
 // ==============================================================================================
 const int fSpeed =        200; // motor speed for general movement
 // ==============================================================================================
@@ -78,7 +78,6 @@ Sensor bLDR;
 // global flag to keep track of if the motors are running to know when to flash oLed
 bool motorsActive = false;
 //int currSpeed = 0; // keep a track of the current speed
-
 // create object for handling the different movement regimes
 // handles line following
 Movement::FollowLine lineFollower(fSpeed, 70, (unsigned long)100);
@@ -105,6 +104,8 @@ void setup() {
   rLed = {.pin = rLedPin};
   pinMode(gLedPin, OUTPUT);
   gLed = {.pin = gLedPin};
+  pinMode(wLedPin, OUTPUT);
+  wLed = {.pin = wLedPin};
 
   // init the sensors
   //pinMode(os1Pin, INPUT);
@@ -180,7 +181,7 @@ int getLineVal(Sensor s1, Sensor s2, Sensor s3) {
 
 // gets the colour of what is in front of the colour sensor
 // won't be accurate unless depth sensor (os4) reads < 300
-Color getColorVal(Led wLed, Sensor ) {
+Color getColorVal(Led wLed, Sensor bLDR, Sensor rLDR) {
   digitalWrite(wLed.pin, true);
   delay(100); // delay to allow values to stabilise, needs testing
   int bVal = analogRead(bLDR.pin);
@@ -203,24 +204,47 @@ bool robotStopped = true;
 // serial command reciever
 String getSerialCommand() {
   String command = Serial.readString();
-  command = command.substring(0, command.length()-1);
+  //command = command.substring(0, command.length()-1);
+  command.trim();
   return command;
 } 
 
 String getBTSerialCommand() {
   String command = SerialNina.readString();
-  command = command.substring(0, command.length()/2);
+  //command = command.substring(0, command.length()/2);
   return command;
 }
 
-
-
 void commandHandler(String command) {
+  // print the command string that was received
   l.logln(command);
   if (command == "stop" || command == "st") {
     robotStopped = true;
   } else if (command == "go" || command == "g") {
     robotStopped = false;
+  } else if (command.substring(0, 2) == "lf") {
+    // line following parameter change on the fly
+    String params = command.substring(2);
+    // contains all the parameters separated by spaces
+    params.trim();
+    
+    int i = 0;
+    while (params[i] != " ") {i++;}
+    String forwardSpeedStr = params.substring(0, i);
+
+    // trim out the first number and space
+    params = params.substring(i+1);
+    i = 0;
+    while (params[i] != " ") {i++;}
+    String turnAmountStr = params.substring(0, i);
+
+    // trim out the first number and space
+    String turnDurationStr = params.substring(i+1);
+    
+    // modify the line following algorithm with the received parameters
+    lineFollower.fSpeed = (int)forwardSpeedStr;
+    lineFollower.turnAmount = (int)turnAmountStr;
+    lineFollower.turnDuration = (unsigned long)turnDuration;
   }
 }
 
@@ -233,20 +257,28 @@ void loop() {
   unsigned long currentMillis = millis();
 
   //servo.write(min(180, int(currentMillis/100)));
-  
+
+  // the main movement code 
   if (robotStopped) {
     setMotors(stopped.getMotorSetting());
+    // if getColorVal == 
+    // if (getColorVal(wLed, rLDR, bLDR) == BLUE) {
+      // digitalWrite(gLed.pin, true);
+      // delay(5100);
+      // digitalWrite(gled.pin, false);
+      // }
+     // if (getColorVal(wLed, rLDR, bLDR) == RED) {
+      // digitalWrite(rLed.pin, true);
+      // delay(5100);
+      // digitalWrite(rled.pin, false);
+      // }
+
   } else {
     int lineVal = getLineVal(os1, os2, os3);
     l.logln(getValsString(os1, os2, os3));
     setMotors(forward.getMotorSetting());
     //setMotors(lineFollower.getMotorSetting(lineVal));
-    
   }
-  
-  if (Serial.available() > 0) {commandHandler(getSerialCommand());}
-  if (SerialNina.available() > 0) {commandHandler(getBTSerialCommand());}
-
 
   // led flashes if the motors are active
   if (motorsActive) {
@@ -259,4 +291,8 @@ void loop() {
       oLed.state = !oLed.state;
     }
   }
+
+  // scan for any commands in the BT or USB serial buffers
+  if (Serial.available() > 0) {commandHandler(getSerialCommand());}
+  if (SerialNina.available() > 0) {commandHandler(getBTSerialCommand());}
 }
