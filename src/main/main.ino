@@ -50,7 +50,7 @@ struct Led {
   bool state;
 };
 
-Logger l((unsigned long)0, USB);
+Logger l((unsigned long)400, BOTH);
 
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *leftwheel = AFMS.getMotor(1); 
@@ -154,9 +154,9 @@ void setMotors(Movement::MotorSetting mSetting) {
 
 int getLineVal(Sensor a, Sensor b) {
   int lineVal = 0;
-  lineVal |= analogRead(a.pin) < 25; // both optoswitches apparently have different sensitivity to lighting
+  lineVal |= analogRead(a.pin) < 20; // both optoswitches apparently have different sensitivity to lighting
   delay(10);
-  lineVal |= (analogRead(b.pin) < 800) << 1; // hence the difference in threshold value
+  lineVal |= (analogRead(b.pin) < 100) << 1; // hence the difference in threshold value
   return lineVal;
 }
 
@@ -266,7 +266,7 @@ void loop() {
   } else {
     //int lineVal = getLineVal(rightsensor, os2, leftsensor);
     //l.logln(String(analogRead(leftsensor.pin)) + " " + String(analogRead(os2.pin)) + " " + String(analogRead(rightsensor.pin)));
-    //l.logln(getValsString(rightsensor, leftsensor));
+    l.logln(getValsString(rightsensor, leftsensor));
 //    delay(10);
     int lineVal = getLineVal(rightsensor, leftsensor);
     //l.logln(lineVal);
