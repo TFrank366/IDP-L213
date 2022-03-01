@@ -3,8 +3,9 @@
 #include <Servo.h>
 #include <Adafruit_MotorShield.h>
 #include <WiFiNINA.h>
-#include "logger.h"
+#include "utils.h"
 #include "movement.h"
+#include "robot.h"
 
 // pin for each component =======================================================================
 // digital pins
@@ -19,18 +20,18 @@ const int servo2Pin =      10;
 // analogue pins
 
 // line sensor
-const int rightsensorPin =        A2;  
-const int leftsensorPin =         A0;  
-
+const int rightsensorPin = A2;  
+const int leftsensorPin =  A0; 
+ 
 // colour sensor
 const int bLDRPin =        A3;  // Blue colour LDR voltage (goes down with more light)     
 const int rLDRPin =        A4;  // Red colour LDR voltage (goes down with more light)
 
 // distance sensor
-const int distsensorPin =         A5;  // OPB704 Voltage (goes down with decreasing distance)       
+const int distsensorPin =  A5;  // OPB704 Voltage (goes down with decreasing distance)       
           
 // ==============================================================================================
-const int fSpeed =        200; // motor speed for general movement
+const int fSpeed =        70; // motor speed for general movement
 // ==============================================================================================
 
 enum Dir {LEFT, RIGHT};
@@ -78,10 +79,10 @@ Sensor bLDR;
 bool motorsActive = false;
 
 // create object for handling the different movement regimes
-// handles line following
-Movement::FollowLine lineFollower(fSpeed, 50, (unsigned long)100);
-// handles straight
-Movement::Forward forward(fSpeed);
+// handles line following         speed  angular v     duration
+Movement::FollowLine lineFollower(fSpeed, 30, (unsigned long)100);
+// handles straight forward movement
+Movement::Straight forward(fSpeed);
 // handles stopped
 Movement::Stop stopped;
 
@@ -156,7 +157,7 @@ int getLineVal(Sensor a, Sensor b) {
   int lineVal = 0;
   lineVal |= analogRead(a.pin) < 20; // both optoswitches apparently have different sensitivity to lighting
   delay(10);
-  lineVal |= (analogRead(b.pin) < 100) << 1; // hence the difference in threshold value
+  lineVal |= (analogRead(b.pin) < 20) << 1; // hence the difference in threshold value
   return lineVal;
 }
 
@@ -245,25 +246,27 @@ void loop() {
   // the main movement code 
   if (robotStopped) {
     setMotors(stopped.getMotorSetting());
-    //l.logln(analogRead(distsensor.pin));
-    if (analogRead(distsensor.pin) < 800) {
+    l.logln(analogRead(distsensor.pin));
+    if (true){//analogRead(distsensor.pin) < 800) {
       delay(10);
-      l.logln(String(analogRead(rLDR.pin)) + " " + String(analogRead(bLDR.pin)));
+      //l.logln(String(analogRead(rLDR.pin)) + " " + String(analogRead(bLDR.pin)));
       delay(10);
       Color blockCol = getColorVal(rLDR, bLDR);
       if (blockCol == BLUE) {
-        l.logln("blue");
+        //l.logln("blue");
         digitalWrite(gLed.pin, true);
         delay(100); // change to 5100 for actual!
         digitalWrite(gLed.pin, false);
       } else {
-        l.logln("red");
+        //l.logln("red");
         digitalWrite(rLed.pin, true);
         delay(100); // change to 5100 for actual!
         digitalWrite(rLed.pin, false);
       }
     }
   } else {
+    
+    
     //int lineVal = getLineVal(rightsensor, os2, leftsensor);
     //l.logln(String(analogRead(leftsensor.pin)) + " " + String(analogRead(os2.pin)) + " " + String(analogRead(rightsensor.pin)));
     l.logln(getValsString(rightsensor, leftsensor));
@@ -277,7 +280,13 @@ void loop() {
 //      //setMotors(lineFollower.getMotorSetting(lineVal));
 //    }  
     setMotors(lineFollower.getMotorSetting(lineVal));
+    //setMotors(forward.getMotorSetting());
     //setMotors(stopped.getMotorSetting());
+
+    int dist = analogRead(distsensor.pin);
+    if (dist < 950) {
+      setMotors(stopped.getMotorSetting());
+    }
   }
 
   // led flashes if the motors are active

@@ -1,5 +1,5 @@
 #include "movement.h"
-#include "logger.h"
+#include "utils.h"
 #include <Arduino.h>
 #include <Adafruit_MotorShield.h>
 
@@ -13,7 +13,8 @@ MotorSetting FollowLine::getMotorSetting(int cols) {
   
   MotorSetting mSetting;
 
-// if both are on then stop regardless of whether a turn is in progress (has hit a junction)
+// if both are on then stop regardless of whether a turn is in progress (has hit a junction) 
+// TEMPORARY, THIS WILL BE HANDLED BY PROGRAM STAGES
   if (cols == 0b11) {
      mSetting = {.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
      return mSetting;
@@ -78,10 +79,29 @@ MotorSetting Stop::getMotorSetting(void) {
   return (MotorSetting){.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
 }
 
-MotorSetting Forward::getMotorSetting(void) {
-  return (MotorSetting){.speeds = {fSpeed, fSpeed}, .directions = {FORWARD, FORWARD}};
+MotorSetting Straight::getMotorSetting(void) {
+  if (lSpeed > 0) {
+    return (MotorSetting){.speeds = {lSpeed, lSpeed}, .directions = {FORWARD, FORWARD}};
+  } else {
+    return (MotorSetting){.speeds = {lSpeed, lSpeed}, .directions = {BACKWARD, BACKWARD}};
+  }
+  
 }
 
-Forward::Forward (int s) {
-  fSpeed = min(max(s, 0), 255); 
+Straight::Straight (int s) {
+  lSpeed = min(max(s, -255), 255); 
+}
+
+MotorSetting Spin::getMotorSetting(void) {
+  if (spinRate > 0) {
+    // spin clockwise
+    return (MotorSetting){.speeds = {spinRate, spinRate}, .directions = {FORWARD, BACKWARD}};
+  } else {
+    // spin anticlockwise
+    return (MotorSetting){.speeds = {spinRate, spinRate}, .directions = {BACKWARD, FORWARD}};
+  }
+}
+
+Spin::Spin (int s) {
+  spinRate = min(max(s, -255), 255);
 }
