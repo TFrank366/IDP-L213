@@ -1,17 +1,29 @@
 //robot.cpp
 
 #include "robot.h"
+#include "utils.h"
 #include "movement.h"
 
 using namespace Robot;
 
-programStage getNextProgramStage(programStage stage) {
-  if (stage != MOVE_TO_LINE_FROM_DROP) {
-    return static_cast<programStage>(stage + 1);
-  } else {
-    return LONG_TRAVERSE_0;
-  }
-}
+//Logger l((unsigned long)0, USB);
+
+//current program:
+//    MOVE_TO_BLOCK,
+//    SENSE_BLOCK_COLOR,
+//    LONG_TRAVERSE_0
+
+//programStage getNextProgramStage(programStage stage) {
+////  if (stage != MOVE_TO_LINE_FROM_DROP) {
+////    return static_cast<programStage>(stage + 1);
+////  } else {
+////    return LONG_TRAVERSE_0;
+////  }
+//  if (stage == MOVE_TO_BLOCK) {return SENSE_BLOCK_COLOR;}
+//  else if (stage == SENSE_BLOCK_COLOR) {return LONG_TRAVERSE_0;}
+//  else {return MOVE_TO_BLOCK;}
+//  //return static_cast<programStage>((stage + 1) % 3);
+//}
 
 //        forward speed, 
 //        slow forward speed,
@@ -21,7 +33,7 @@ Vehicle::Vehicle (int fS, int sS, int tS, unsigned long tD) {
   fSpeed = fS;
   motorsActive = false;
   stageShouldAdvance = false;
-  currentStage = START;
+  currentStageNum = 0;
   crossingDetector = &RisingEdgeDetector();
   lineFollower = &Movement::FollowLine(fS, tS, tD);
   slowForward = &Movement::Straight(sS); // for slow forward movement
@@ -35,6 +47,7 @@ void Vehicle::updateCrossingDetector (int lineVal) {
   if (crossingDetector->checkForEdge()) {
    crossingDetector->reset();
    currentCrossingsCount++;
+   //l.logln("crossing found");
   }
 }
 
@@ -56,37 +69,49 @@ void Vehicle::updateCrossingDetector (int lineVal) {
 
 // handles the switching of the different movement classes based on the current program stage
 Movement::MotorSetting Vehicle::getMotorSetting(int lineVal) {
-  switch (currentStage) {
+  switch (program[currentStageNum].stageName) {
     case START:
-      // move forward until the 2nd line is hit
+      //l.logln("moving slow for start");
+      return slowForward->getMotorSetting();
       break;
     case LONG_TRAVERSE_0:
     case LONG_TRAVERSE_1:
+       //l.logln("line following");
       return lineFollower->getMotorSetting(lineVal);
       break;
     case SENSE_BLOCK_COLOR:
     case RAISE_BLOCK:
     case LOWER_BLOCK:
     case DROP_BLOCK:
+      //l.logln("stopped");
       return stopped->getMotorSetting();
     case MOVE_TO_BLOCK:
     case GRAB_BLOCK:
+      //l.logln("moving slow");
       return slowForward->getMotorSetting();
-      
     default:
       return stopped->getMotorSetting();
   }
 }
 
 // performs a specific function if there is one associated with the current stage
-void Vehicle::performFunction() {
-  switch (currentStage) {
+void Vehicle::performFunction(int blockDist, Color blockCol, Led gLed, Led rLed) {
+  switch (program[currentStageNum].stageName) {
     case SENSE_BLOCK_COLOR:
-      // see what the colour is
-      // set correct value for block colour
-      // light correct light
-      // delay for 5.1 seconds
-      stageShouldAdvance = true;
+      // if we are close enough to the block, get its color
+      if (blockDist < 800) {
+        blockColor = blockCol;
+        if (blockColor == BLUE) {
+          digitalWrite(gLed.pin, true);
+          delay(5100);
+          digitalWrite(gLed.pin, false);
+        } else {
+          digitalWrite(rLed.pin, true);
+          delay(5100);
+          digitalWrite(rLed.pin, false);
+        }
+        stageShouldAdvance = true;
+      } 
       break;
     case GRAB_BLOCK:
       // have to progressively close the servo
@@ -114,7 +139,7 @@ bool Vehicle::checkForAdvance() {
   if (stageShouldAdvance) {return true;}
   
   //otherwise, have to look at params
-  switch (currentStage) {
+  switch (program[currentStageNum].stageName) {
     case LONG_TRAVERSE_0:
     case LONG_TRAVERSE_1:
       if (currentCrossingsCount == 1) {return true;}
@@ -139,10 +164,9 @@ bool Vehicle::checkForAdvance() {
 // advances the program stage to the next
 void Vehicle::advanceStage() {
   // if we've dropped off a block, increment iteration number
-  if (currentStage == MOVE_TO_LINE_FROM_DROP) {currentIteration++;}
-  currentStage = getNextProgramStage(currentStage);
+  currentStageNum = program[currentStageNum].next;
+  if (currentStageNum == 0) {currentIteration++;}
   // reset all stage-specific flags
   stageShouldAdvance = false;
   currentCrossingsCount = 0;
-  
 }

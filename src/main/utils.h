@@ -5,6 +5,18 @@
 
 enum Mode {USB, BT, BOTH};
 
+struct Sensor {
+  int pin;
+  int value;
+};
+
+struct Led {
+  int pin;
+  bool state;
+};
+
+enum Color {BLUE, RED};
+
 class Logger {
   public: 
     Logger (unsigned long, Mode);
