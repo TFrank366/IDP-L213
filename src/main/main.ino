@@ -2,9 +2,9 @@
 // the main program file for the arduino
 #include <Servo.h>
 #include <Adafruit_MotorShield.h>
-#include <WiFiNINA.h>
 #include <Arduino_LSM6DS3.h>
-#include "utils.h"
+#include <WiFiNINA.h>
+#include <utils.h>
 #include "movement.h"
 #include "robot.h"
 
@@ -15,44 +15,36 @@
 const int oLedPin =         5; // orange LED (movement)
 const int rLedPin =         3; // red LED (detection)
 const int gLedPin =         4; // green LED (detection)
-const int servo1Pin =       9;
-const int servo2Pin =      10;
+const int servo1Pin =      10;
+const int servo2Pin =      9;
 
 // analogue pins
 
 // line sensor
-const int rightsensorPin = A2;  
-const int leftsensorPin =  A0; 
+const int rightsensorPin = A4;  
+const int leftsensorPin =  A5; 
  
 // colour sensor
 const int bLDRPin =        A3;  // Blue colour LDR voltage (goes down with more light)     
-const int rLDRPin =        A4;  // Red colour LDR voltage (goes down with more light)
+const int rLDRPin =        A2;  // Red colour LDR voltage (goes down with more light)
 
 // distance sensor
-const int distsensorPin =  A5;  // OPB704 Voltage (goes down with decreasing distance)       
+const int distsensorPin =  A0;  // OPB704 Voltage (goes down with decreasing distance)       
           
 // ==============================================================================================
-const int fSpeed =        70; // motor speed for general movement
+const int fSpeed =        150; // motor speed for general movement
 // ==============================================================================================
 
 enum Dir {LEFT, RIGHT};
 
-enum Color {BLUE, RED};
-
+//enum Color {BLUE, RED};
+//
 bool MOTORSREVERSED = false;
 bool robotStopped = true;
+//
 
-struct Sensor {
-  int pin;
-  int value;
-};
 
-struct Led {
-  int pin;
-  bool state;
-};
-
-Logger l((unsigned long)400, BOTH);
+Logger l((unsigned long)0, USB);
 
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *leftwheel = AFMS.getMotor(1); 
@@ -86,8 +78,10 @@ Movement::FollowLine lineFollower(fSpeed, 30, (unsigned long)100);
 Movement::Straight forward(fSpeed);
 // handles stopped
 Movement::Stop stopped;
-// spinning
-Movement::Spin spinning(85); //spinning speed
+// handles spinning with this specific speed written here
+Movement::Spin spinning(85); // spinning speed
+
+Robot::Vehicle* robot(fSpeed, 70, 85, (unsigned long)100);
 
 void setup() {
   // setup serial link
@@ -103,26 +97,40 @@ void setup() {
 
   //init led structs
   pinMode(oLedPin, OUTPUT);
-  oLed = {.pin = oLedPin};
   pinMode(rLedPin, OUTPUT);
-  rLed = {.pin = rLedPin};
   pinMode(gLedPin, OUTPUT);
+  
+  oLed = {.pin = oLedPin};
+  rLed = {.pin = rLedPin};
   gLed = {.pin = gLedPin};
+  
 
   // init the sensors
   pinMode(rightsensorPin, INPUT);
-  rightsensor.pin = rightsensorPin;
   pinMode(leftsensorPin, INPUT);
-  leftsensor.pin = leftsensorPin;
   pinMode(distsensorPin, INPUT);
-  distsensor.pin = distsensorPin;
   pinMode(bLDRPin, INPUT);
-  bLDR.pin = bLDRPin;
   pinMode(rLDRPin, INPUT);
+  
+
+  rightsensor.pin = rightsensorPin;
+  leftsensor.pin = leftsensorPin;
+  distsensor.pin = distsensorPin;
+  bLDR.pin = bLDRPin;
   rLDR.pin = rLDRPin;
+
+  
 
   // initialise the motors
   AFMS.begin();
+
+  servo.attach(servo2Pin);
+//  servo.write(105);
+//  delay(2000);
+//  servo.write(155);
+  
+  // 162 is fully closed
+  // 105 is open
   
 }
 
@@ -152,7 +160,7 @@ void setMotors(Movement::MotorSetting mSetting) {
     motorsActive = true;
   } else if (mSetting.speeds[0] == 0 && mSetting.speeds[1] == 0 && motorsActive) {
     motorsActive = false;
-    robotStopped = true;
+    //robotStopped = true;
     digitalWrite(oLed.pin, false);
   }
 }
@@ -199,7 +207,9 @@ String getBTSerialCommand() {
   return command;
 }
 
-void commandHandler(Movement::FollowLine* lineFollowerPtr, String command) {
+float desired_angle;
+
+void commandHandler(String command) {
   // print the command string that was received
   //l.logln(command);
   l.logln("command received");
@@ -207,123 +217,111 @@ void commandHandler(Movement::FollowLine* lineFollowerPtr, String command) {
   if (command == "stop" || command == "stopstop") {
     l.logln("stopping");
     robotStopped = true;
-  } else if (command == "go" || command == "gogo") {
+  } 
+  else if (command == "go" || command == "gogo") {
     l.logln("starting");
     robotStopped = false;
-  } else if (command.substring(0, 2) == "lf") {
-    // this will likely only happen if the message has been sent double
-    l.logln("line follower change");
-    if (command.length() > 16) {return;}
-    // line following parameter change on the fly
-    String params = command.substring(3);
-    // contains all the parameters separated by spaces
-
-    String forwardSpeedStr = params.substring(0, params.indexOf(" "));
-    l.logln(forwardSpeedStr);
-  
-    String turnAmountStr = params.substring(params.indexOf(" ") + 1, params.lastIndexOf(" "));
-    l.logln(turnAmountStr);
-
-    // trim out the first number and space
-    String turnDurationStr = params.substring(params.lastIndexOf(" ") + 1);
-    l.logln(turnDurationStr);
+  }
+  else {
+    l.logln("turning");
+    desired_angle = stof(command);   
+  } 
+}
+   
+void turning_handler(float desired_angle) {
+  // Performs Euler integration of angular turning to get to desired angle
+   
+   char buffer[8];    // string buffer for use with dtostrf() function
+   float ax, ay, az;  // accelerometer values
+   float gx, gy, gz;
+   float inst_ang_v;
+   float angular_change = 0.0;
     
-    // modify the line following algorithm with the received parameters
-    lineFollowerPtr->setParams(forwardSpeedStr.toInt(), turnAmountStr.toInt(), (unsigned long)turnDurationStr.toInt());
-//    lineFollower.fSpeed = forwardSpeedStr.toInt();
-//    lineFollower.turnAmount = turnAmountStr.toInt();
-//    lineFollower.turnDuration = (unsigned long)turnDurationStr.toInt();
-    l.logln("lf change done");
+  while (IMU.gyroscopeAvailable() && IMU.readGyroscope(gx, gy, gz)) {
+    Serial.print("gz = ");  Serial.print(dtostrf(gz, 7, 1, buffer));  Serial.println(" °/s");
+    inst_ang_v = gz;
+    float delta_t = 0.01; // 10 milliseconds, change accordingly
+    angular_change += inst_ang_v * delta_t; // inst ang v measured in deg/seconds
+    int y = round(delta_t * 1000);
+    delay(y);
+
+    if (angular_change == desired_angle) {
+      setMotors(stopped.getMotorSetting());
+      break;
+    }
+    
   }
 }
-
 
 unsigned long previousMillis = 0;
 unsigned long oLedInterval = 500;
 
+bool servoOn = true;
+
 void loop() {
-  //put your main code here, to run repeatedly:
+ 
   unsigned long currentMillis = millis();
+//  servo.write(max(min(currentMillis/80+90, 162), 105));
+//  if (currentMillis > 7000 && servoOn) {
+//    l.logln("servo detached");
+//    servo.detach();
+//    servoOn = false;
+//  }
 
-  //servo.write(min(180, int(currentMillis/100)));
 
-  // the main movement code 
+  //servo.write(min(165, max(currentMillis, 105)))
+
+
+//  if (!robotStopped) {
+//    if (robot->checkForAdvance()) {
+//      robot->advanceStage();
+//    }
+//    setMotors(robot->getMotorSetting(getLineVal(rightsensor, leftsensor)));
+//    robot->performFunction(analogRead(distsensor.pin), getColorVal(rLDR, bLDR), gLed, rLed);
+//  }
+
+ 
+//   the main movement code 
   if (robotStopped) {
-    setMotors(stopped.getMotorSetting());
-    l.logln(analogRead(distsensor.pin));
-    if (true){//analogRead(distsensor.pin) < 800) {
-      delay(10);
-      //l.logln(String(analogRead(rLDR.pin)) + " " + String(analogRead(bLDR.pin)));
-      delay(10);
-      Color blockCol = getColorVal(rLDR, bLDR);
-      if (blockCol == BLUE) {
-        //l.logln("blue");
-        digitalWrite(gLed.pin, true);
-        delay(100); // change to 5100 for actual!
-        digitalWrite(gLed.pin, false);
-      } else {
-        //l.logln("red");
-        digitalWrite(rLed.pin, true);
-        delay(100); // change to 5100 for actual!
-        digitalWrite(rLed.pin, false);
-      }
-    }
-  } else {
-   
-   setMotors(spinning.getMotorSetting());
-
-   char buffer[8];    // string buffer for use with dtostrf() function
-   float ax, ay, az;  // accelerometer values
-   float gx, gy, gz;  // gyroscope values
-   float inst_angle_vel;
-   // Retrieve and print IMU values
-   float myArray[100];
-
-for (int i=0; i <= 100; i++) {   
-   if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable() && IMU.readAcceleration(ax, ay, az) && IMU.readGyroscope(gx, gy, gz)) {
-//      Serial.print("ax = ");  Serial.print(dtostrf(ax, 4, 1, buffer));  Serial.print(" g, ");
-//      Serial.print("ay = ");  Serial.print(dtostrf(ay, 4, 1, buffer));  Serial.print(" g, ");
-//      Serial.print("az = ");  Serial.print(dtostrf(az, 4, 1, buffer));  Serial.print(" g, ");
-//      Serial.print("gx = ");  Serial.print(dtostrf(gx, 7, 1, buffer));  Serial.print(" °/s, ");
-//      Serial.print("gy = ");  Serial.print(dtostrf(gy, 7, 1, buffer));  Serial.print(" °/s, ");
-      Serial.print("gz = ");  Serial.print(dtostrf(gz, 7, 1, buffer));  Serial.println(" °/s");
-      myArray[i] = dtostrf(gz, 7, 1, buffer);
-      }
-      
-      float arraySum;
-      
-      arraySum = 0;
-      for(index = 0; index < sizeof(myArray)/sizeof( myArray[0]); index++)
-      { arraySum += myArray[index]; }
-      
-      Serial.print(arraySum/100);
-      setMotors(stopped.getMotorSetting());
-      
-   }
+    turning_handler(desired_angle);
+    robotStopped = true
     
-//    delay(10000);
-//    setMotors(stopped.getMotorSetting());
-    //int lineVal = getLineVal(rightsensor, os2, leftsensor);
-//    //l.logln(String(analogRead(leftsensor.pin)) + " " + String(analogRead(os2.pin)) + " " + String(analogRead(rightsensor.pin)));
-//    l.logln(getValsString(rightsensor, leftsensor));
-////    delay(10);
-//    int lineVal = getLineVal(rightsensor, leftsensor);
-//    //l.logln(lineVal);
-////    if (lightToBit(analogRead(rightsensor.pin)) == 1 && lightToBit(analogRead(leftsensor.pin)) == 1) {
-////      setMotors(stopped.getMotorSetting());
-////    } else {
-////      setMotors(forward.getMotorSetting());
-////      //setMotors(lineFollower.getMotorSetting(lineVal));
-////    }  
-//    setMotors(lineFollower.getMotorSetting(lineVal));
-//    //setMotors(forward.getMotorSetting());
-//    //setMotors(stopped.getMotorSetting());
-
-    int dist = analogRead(distsensor.pin);
-    if (dist < 950) {
-      setMotors(stopped.getMotorSetting());
-    }
   }
+//    setMotors(stopped.getMotorSetting());
+//    l.logln(analogRead(distsensor.pin));
+//    if (true){//analogRead(distsensor.pin) < 800) {
+//      delay(10);
+//      //l.logln(String(analogRead(rLDR.pin)) + " " + String(analogRead(bLDR.pin)));
+//      delay(10);
+//      Color blockCol = getColorVal(rLDR, bLDR);
+//      if (blockCol == BLUE) {
+//        //l.logln("blue");
+//        digitalWrite(gLed.pin, true);
+//        delay(100); // change to 5100 for actual!
+//        digitalWrite(gLed.pin, false);
+//      } else {
+//        //l.logln("red");
+//        digitalWrite(rLed.pin, true);
+//        delay(100); // change to 5100 for actual!
+//        digitalWrite(rLed.pin, false);
+//      }
+//    }
+//  } 
+  else {
+    l.logln(getValsString(rightsensor, leftsensor));
+    int lineVal = getLineVal(rightsensor, leftsensor);
+    //l.logln(lineVal); 
+    setMotors(lineFollower.getMotorSetting(lineVal));
+    //setMotors(forward.getMotorSetting());
+    //setMotors(stopped.getMotorSetting());
+//
+//    //robot->getMotorSetting(lineVal);
+//
+//    int dist = analogRead(distsensor.pin);
+//    if (dist < 950) {
+//      setMotors(stopped.getMotorSetting());
+//    }
+//  }
 
   // led flashes if the motors are active
   if (motorsActive) {
@@ -338,6 +336,6 @@ for (int i=0; i <= 100; i++) {
   }
 
   // scan for any commands in the BT or USB serial buffers
-  if (Serial.available() > 0) {commandHandler(&lineFollower, getSerialCommand());}
-  if (SerialNina.available() > 0) {commandHandler(&lineFollower, getBTSerialCommand());}
+  if (Serial.available() > 0) {commandHandler(getSerialCommand());}
+  if (SerialNina.available() > 0) {commandHandler(getBTSerialCommand());}
 }
