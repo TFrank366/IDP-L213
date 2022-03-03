@@ -4,7 +4,7 @@
 #include <Adafruit_MotorShield.h>
 #include <Arduino_LSM6DS3.h>
 #include <WiFiNINA.h>
-#include <utils.h>
+#include "utils.h"
 #include "movement.h"
 #include "robot.h"
 
@@ -232,7 +232,7 @@ void turning_handler(float desired_angle) {
   // Performs Euler integration of angular turning to get to desired angle
    
    char buffer[8];    // string buffer for use with dtostrf() function
-   float ax, ay, az;  // accelerometer values
+  // float ax, ay, az;  // accelerometer values
    float gx, gy, gz;
    float inst_ang_v;
    float angular_change = 0.0;
