@@ -17,16 +17,16 @@ const int servo1Pin =       9;
 const int servo2Pin =      10;
 // analogue pins
 // line sensor
-const int os1Pin =         A2;  // analogue pin #
-const int os2Pin =         A1;  // analogue pin #
-const int os3Pin =         A0;  // analogue pin #
+const int os1Pin =         A1;  // analogue pin # //right
+const int os2Pin =         A2;  // analogue pin #
+const int os3Pin =         A0;  // analogue pin # //left
 // colour sensor
 const int bLDRPin =        A3;  // Blue colour LDR voltage (goes down with more light)        TBD
-const int rLDRPin =        A4;  // Red colour LDR voltage                                     TBD
-const int os4Pin =         A5;  // OPB704 Voltage (goes down with decreasing distance)        TBD
+const int rLDRPin =        A5;  // Red colour LDR voltage                                     TBD
+const int os4Pin =         A1;  // OPB704 Voltage (goes down with decreasing distance)        TBD
 const int wLedPin =         6;  // pin that the LED is attached to              TBD
 // ==============================================================================================
-const int fSpeed =        200; // motor speed for general movement
+const int fSpeed =        210; // motor speed for general movement
 // ==============================================================================================
 
 enum Dir {LEFT, RIGHT};
@@ -51,11 +51,11 @@ struct Led {
   bool state;
 };
 
-Logger l((unsigned long)0, USB);
+Logger l((unsigned long)200, BOTH);
 
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
-Adafruit_DCMotor *m1 = AFMS.getMotor(1);
-Adafruit_DCMotor *m2 = AFMS.getMotor(2);
+Adafruit_DCMotor *m1 = AFMS.getMotor(3);
+Adafruit_DCMotor *m2 = AFMS.getMotor(4);
 
 Servo servo;
 
@@ -81,7 +81,7 @@ bool motorsActive = false;
 //int currSpeed = 0; // keep a track of the current speed
 // create object for handling the different movement regimes
 // handles line following
-Movement::FollowLine lineFollower(fSpeed, 50, (unsigned long)100);
+Movement::FollowLine lineFollower(fSpeed, 70, (unsigned long)100);
 // handles straight
 Movement::Forward forward(fSpeed);
 // handles stopped
@@ -178,7 +178,7 @@ int getLineVal(Sensor s1, Sensor s2, Sensor s3) {
   delay(10);
   lineVal |= lightToBit(analogRead(s2.pin)) << 1;
   delay(10);
-  lineVal |= (analogRead(s3.pin) < 800) << 2;
+  lineVal |= (analogRead(s3.pin) < 25) << 2;
   return lineVal;
 }
 
@@ -261,6 +261,7 @@ unsigned long previousMillis = 0;
 unsigned long oLedInterval = 500;
 
 void loop() {
+  //Serial.println("loop");
   //put your main code here, to run repeatedly:
   unsigned long currentMillis = millis();
 
@@ -289,10 +290,11 @@ void loop() {
     }
   } else {
     //int lineVal = getLineVal(os1, os2, os3);
-    //l.logln(String(analogRead(os3.pin)) + " " + String(analogRead(os2.pin)) + " " + String(analogRead(os1.pin)));
+    l.logln(String(analogRead(os3.pin)) + " " + String(analogRead(os2.pin)) + " " + String(analogRead(os1.pin)));
     //l.logln(getValsString(os1, os2, os3));
 //    delay(10);
     int lineVal = getLineVal(os1, os2, os3);
+    Serial.println(lineVal);
     //l.logln(lineVal);
 //    if (lightToBit(analogRead(os1.pin)) == 1 && lightToBit(analogRead(os3.pin)) == 1) {
 //      setMotors(stopped.getMotorSetting());
