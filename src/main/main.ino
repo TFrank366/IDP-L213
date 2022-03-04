@@ -277,6 +277,7 @@ void loop() {
     //setMotors(stopped.getMotorSetting()); 
   }
 
+
   // led flashes if the motors are active
   if (motorsActive) {
     //Serial.println("led flashing");

@@ -83,28 +83,9 @@ MotorSetting Stop::getMotorSetting(void) {
 }
 
 MotorSetting Straight::getMotorSetting(void) {
-  if (lSpeed > 0) {
-    return (MotorSetting){.speeds = {lSpeed, lSpeed}, .directions = {FORWARD, FORWARD}};
-  } else {
-    return (MotorSetting){.speeds = {lSpeed, lSpeed}, .directions = {BACKWARD, BACKWARD}};
-  }
-  
+  return (MotorSetting){.speeds = {fSpeed, fSpeed}, .directions = {FORWARD, FORWARD}};
 }
 
 Straight::Straight (int s) {
-  lSpeed = min(max(s, -255), 255); 
-}
-
-MotorSetting Spin::getMotorSetting(void) {
-  if (spinRate > 0) {
-    // spin clockwise
-    return (MotorSetting){.speeds = {spinRate, spinRate}, .directions = {FORWARD, BACKWARD}};
-  } else {
-    // spin anticlockwise
-    return (MotorSetting){.speeds = {spinRate, spinRate}, .directions = {BACKWARD, FORWARD}};
-  }
-}
-
-Spin::Spin (int s) {
-  spinRate = min(max(s, -255), 255);
+  fSpeed = min(max(s, 0), 255); 
 }

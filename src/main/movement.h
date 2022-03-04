@@ -10,8 +10,6 @@ namespace Movement{
     int directions[2];
   };
 
-  float spinRateTo(int);
-
   class Move {};
   
   class Stop : public Move {
@@ -24,23 +22,13 @@ namespace Movement{
   class Straight : public Move {
     public:
       Straight (int);
-      Straight ();
-      int lSpeed; // the linear speed
-      MotorSetting getMotorSetting (void);
-  };
-
-  class Spin : public Move {
-    public:
-      Spin (int);
-      FollowLine ();
-      int spinRate; // > 0 => CW and vice versa 
+      int fSpeed; // the forward speed
       MotorSetting getMotorSetting (void);
   };
   
   class FollowLine : public Move {
     public:
       FollowLine (int, int, unsigned long);
-      FollowLine ();
       int fSpeed;
       bool turning;
       MotorSetting currentTurn;
