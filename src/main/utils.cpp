@@ -47,6 +47,10 @@ RisingEdgeDetector::RisingEdgeDetector() {
 }
 
 void RisingEdgeDetector::addNew(bool value) {
+  for (int i = historyLength - 1; i > 0; i--) {
+    history[i] = history[i - 1];
+  }
+  history[0] = value;
 }
 
 // newer values are pushed in the front of the array (lower index)
@@ -56,28 +60,37 @@ bool RisingEdgeDetector::checkForEdge() {
   int edgeIndex = -1;
   for (int i = 0; i < historyLength; i++) {
     if (history[i] == true && edgeIndex == -1) {
+//      Serial.print("high ");
+//      Serial.println(i);
       // value is true before edge - good
       highCount++;
-    } else {
+    } else if (history[i] == false){
       // value is false
+      // need at least a quarter of the history high to make sure
       if (i > historyLength/4 && edgeIndex == -1) {
         edgeIndex = i;
+//        Serial.print("low ");
+//        Serial.println(i);
         lowCount++;
       } else if (i > edgeIndex) {
+//        Serial.print("low ");
+//        Serial.println(i);
         lowCount++;
       }
     }
   }
   //check if the proportions are enough to consitiute a true rising edge
-  if ((float)highCount/edgeIndex > 0.75 && (float)lowCount/(historyLength - edgeIndex)) {
+//  Serial.println((float)highCount/edgeIndex);
+//  Serial.println((float)lowCount/(historyLength - edgeIndex));
+  if ((float)highCount/edgeIndex > 0.5 && (float)lowCount/(historyLength - edgeIndex) > 0.5) {
     return true;
   } else {
     return false;
   }
 }
 
-void RisingEdgeDetector::reset() {
+void RisingEdgeDetector::set(bool value) {
   for (int i = 0; i < historyLength; i++) {
-    history[i] = true;
+    history[i] = value;
   }
 }

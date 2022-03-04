@@ -36,7 +36,7 @@ class RisingEdgeDetector {
     size_t historyLength;
     void addNew(bool); // adds a new entry into the history
     bool checkForEdge(); // look back through history to see if a rising edge is present
-    void reset();
+    void set(bool);
 };
 
 #endif

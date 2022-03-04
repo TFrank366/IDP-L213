@@ -13,19 +13,19 @@
 
 namespace Robot {  
   enum programStageName {
-    START,
-    LONG_TRAVERSE_0, // deposit -> collection
-    TURN_TO_BLOCK,
-    MOVE_TO_BLOCK, // move slower here
-    SENSE_BLOCK_COLOR,
-    GRAB_BLOCK,
-    RAISE_BLOCK,
-    MOVE_TO_LINE_FROM_BLOCK,
-    LONG_TRAVERSE_1, // collection -> deposit
-    MOVE_TO_DROP_ZONE,
-    LOWER_BLOCK,
-    DROP_BLOCK,
-    MOVE_TO_LINE_FROM_DROP,
+    START = 0,
+    LONG_TRAVERSE_0 = 1, // deposit -> collection
+    TURN_TO_BLOCK = 2,
+    MOVE_TO_BLOCK = 3, // move slower here
+    SENSE_BLOCK_COLOR = 4,
+    GRAB_BLOCK = 5,
+    RAISE_BLOCK = 6,
+    MOVE_TO_LINE_FROM_BLOCK = 7,
+    LONG_TRAVERSE_1 = 8, // collection -> deposit
+    MOVE_TO_DROP_ZONE = 9,
+    LOWER_BLOCK = 10,
+    DROP_BLOCK = 11,
+    MOVE_TO_LINE_FROM_DROP = 12,
   };
 
   struct programStage {
@@ -38,7 +38,8 @@ namespace Robot {
   class Vehicle {
     public:
       Vehicle(int, int, int, unsigned long); // constructor
-      int currentStageNum;
+      //int currentStageNum;
+      //programStageName currentStage;
       int currentIteration;
       int blockColor; // TODO: use colour enum
       bool motorsActive;
@@ -47,11 +48,8 @@ namespace Robot {
       int currentCrossingsCount; //count of the crossings seen in this stage so far
 
       // set the program here
-      programStage program[3] = {
-       (programStage){.stageName=MOVE_TO_BLOCK, .next = 1},
-       (programStage){.stageName=SENSE_BLOCK_COLOR, .next = 2},
-       (programStage){.stageName=LONG_TRAVERSE_0, .next = 0}
-      };
+      //programStage program[3];
+      //int stageNums[3];
 
       // a rising edge detector to find when crossings are met
       RisingEdgeDetector* crossingDetector;
@@ -63,9 +61,9 @@ namespace Robot {
       Movement::Stop* stopped;
   
       void updateCrossingDetector(int);
-      void performFunction(int, Color, Led, Led);
-      Movement::MotorSetting getMotorSetting(int);
-      bool checkForAdvance(); // run each iteration of main loop to check if the  next stage should be triggered
+      void performFunction(programStageName, int, Color, Led, Led);
+      Movement::MotorSetting getMotorSetting(programStageName, int);
+      bool checkForAdvance(programStageName); // run each iteration of main loop to check if the  next stage should be triggered
       void advanceStage();      
       
   };
