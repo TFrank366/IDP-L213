@@ -10,23 +10,14 @@ namespace Movement{
     int directions[2];
   };
 
-  class Move {};
+  enum MoveType{
+    STOP,
+    STRAIGHT,
+    TURN,
+    SPIN
+ };
   
-  class Stop : public Move {
-    public:
-      MotorSetting getMotorSetting (void);
-   };
-  
-  class Sweep : public Move {};
-
-  class Forward : public Move {
-    public:
-      Forward (int);
-      int fSpeed; // the forward speed
-      MotorSetting getMotorSetting (void);
-  };
-  
-  class FollowLine : public Move {
+  class FollowLine {
     public:
       FollowLine (int, int, unsigned long);
       int fSpeed;
@@ -38,6 +29,9 @@ namespace Movement{
       void setParams(int, int, unsigned long);
       MotorSetting getMotorSetting (int);
   };
+
+  MotorSetting getMovement(MoveType, int);
+  
 }
 
 

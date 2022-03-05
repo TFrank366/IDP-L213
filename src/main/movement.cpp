@@ -1,5 +1,5 @@
 #include "movement.h"
-#include "logger.h"
+#include "utils.h"
 #include <Arduino.h>
 #include <Adafruit_MotorShield.h>
 
@@ -24,14 +24,13 @@ MotorSetting FollowLine::getMotorSetting(int cols) {
     //set the turning flag to false
     turning = false;
 
-    int speedPlus = min(fSpeed + turnAmount/2, 255);
-    int speedMinus = fSpeed - turnAmount/2;
+    int speedPlus = min(fSpeed + turnAmount, 255);
+    int speedMinus = fSpeed - turnAmount;
     
     switch (cols) {
       // line only on right sensor
       // have to turn right
-      case 0b001:
-      case 0b011:  
+      case 0b01: 
         mSetting = {.speeds = {speedPlus, abs(speedMinus)}, .directions = {FORWARD, FORWARD}};
         if (speedMinus < 0) {mSetting.directions[1] = BACKWARD;};
         turning = true;
@@ -41,8 +40,7 @@ MotorSetting FollowLine::getMotorSetting(int cols) {
         
        // line only on left sensor
        // have to turn left
-       case 0b100:
-       case 0b110:
+       case 0b10:
         mSetting = {.speeds = {abs(speedMinus), speedPlus}, .directions = {FORWARD, FORWARD}};
         if (speedMinus < 0) {mSetting.directions[0] = BACKWARD;};
         turning = true;
@@ -74,14 +72,28 @@ FollowLine::FollowLine (int fS, int tAmount, unsigned long tDuration) {
   turning = false;
 }
 
-MotorSetting Stop::getMotorSetting(void) {
-  return (MotorSetting){.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
-}
 
-MotorSetting Forward::getMotorSetting(void) {
-  return (MotorSetting){.speeds = {fSpeed, fSpeed}, .directions = {FORWARD, FORWARD}};
-}
-
-Forward::Forward (int s) {
-  fSpeed = min(max(s, 0), 255); 
+MotorSetting Movement::getMovement(MoveType moveType, int value) {
+  switch (moveType) {
+    case STOP:
+      return (MotorSetting){.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
+      break;
+    case STRAIGHT:
+      if (value < 0) {
+        return (MotorSetting){.speeds = {abs(value), abs(value)}, .directions = {BACKWARD, BACKWARD}};
+      } else {
+        return (MotorSetting){.speeds = {value, value}, .directions = {FORWARD, FORWARD}};
+      }
+      break;
+    case TURN:
+    break;
+    case SPIN:
+      // ccw is positive for now
+      if (value > 0) {
+        return (MotorSetting){.speeds = {value, value}, .directions = {BACKWARD, FORWARD}};
+      } else {
+        return (MotorSetting){.speeds = {abs(value), abs(value)}, .directions = {FORWARD, BACKWARD}};
+      }
+    break;
+  }
 }
