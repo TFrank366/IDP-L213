@@ -1,4 +1,6 @@
 // utils.h
+// contains the definitions of utilities, such as stages and communication to Arduino
+
 #ifndef UTILS_H
 #define UTILS_H
 #include <Arduino.h>

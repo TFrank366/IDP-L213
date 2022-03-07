@@ -6,17 +6,19 @@
 
 namespace Movement{
   struct MotorSetting {
-    int speeds[2];
-    int directions[2];
+    int speeds[2]; // 2 speeds, one for each wheel
+    int directions[2]; // 2 directions, one for each wheel
   };
 
+// for its various methods of motion
   enum MoveType{
     STOP,
     STRAIGHT,
     TURN,
     SPIN
  };
-  
+
+// to perform line following
   class FollowLine {
     public:
       FollowLine (int, int, unsigned long);

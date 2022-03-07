@@ -3,12 +3,12 @@
 #include <SPI.h>
 #include <Arduino.h>
 
-// TODO: impelement per channel time gap
-
 Logger::Logger (unsigned long gap, Mode m) {
   timeGap = gap;
   mode = m;
 }
+
+// All of this code below  takes care of BT + serial communication and printing etc
 void Logger::logln(int i) {
   unsigned long nowTime = millis();
   if (nowTime - lastLogTime >= timeGap) {

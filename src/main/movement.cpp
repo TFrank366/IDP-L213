@@ -5,28 +5,28 @@
 
 using namespace Movement;
 
-// takes an input integer that represents state of the sensors as bits (s3 s3 s1) 
-// robot is setup m1---m2
-//                 \ ^ /
-//                  \o/
+// takes an input integer that represents state of the sensors as bits
 MotorSetting FollowLine::getMotorSetting(int cols) {
-  Serial.println("line following");
+  Serial.println("line following"); // acknowledges that it is going to follow the line
   unsigned long nowMillis = millis();
-  // create new motorsetting struct
+  
+  // create new MotorSetting struct named "mSetting", like how the Led structs have "rLed"
   MotorSetting mSetting;
+  
   // if both are on then stop regardless of whether a turn is in progress
-//  if (cols == 0b101 || cols == 0b111) {
-//    mSetting = {.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
-//    return mSetting;
-//  }
-  if (true){//!turning || nowMillis - turnStart > turnDuration) {
+  // means that it has hit a junction, so it must stop
+  if (cols == 0b11) {
+    mSetting = {.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
+    return mSetting;
+  }
+  
+  if (!turning || nowMillis - turnStart > turnDuration) {
     // if there is not a turn taking place or it has elapsed
+    turning = false;  // set the turning flag to false
 
-    //set the turning flag to false
-    turning = false;
-
-    int speedPlus = min(fSpeed + turnAmount, 255);
-    int speedMinus = fSpeed - turnAmount;
+    // Integers that are higher or lower than the general movement speed
+    int speedPlus = min(fSpeed + turnAmount, 255); // Makes the wheel go faster more than usual to turn
+    int speedMinus = fSpeed - turnAmount; // Makes the wheel go slower than usual to turn
     
     switch (cols) {
       // line only on right sensor
@@ -49,12 +49,13 @@ MotorSetting FollowLine::getMotorSetting(int cols) {
         currentTurn = mSetting;
         break;
         
-       default:
+       default: // ie case 0b00
         // go straight ahead
         mSetting = {.speeds = {fSpeed, fSpeed}, .directions = {FORWARD, FORWARD}};
         break;
     }
-  } else if (turning) {
+  } 
+  else if (turning) {
     mSetting = currentTurn;
   }
 
@@ -82,22 +83,27 @@ MotorSetting Movement::getMovement(MoveType moveType, int value) {
     case STOP:
       return (MotorSetting){.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
       break;
+      
     case STRAIGHT:
-      if (value < 0) {
+      if (value < 0) { // straight reversing
         return (MotorSetting){.speeds = {abs(value), abs(value)}, .directions = {BACKWARD, BACKWARD}};
-      } else {
+      } 
+      else {
         return (MotorSetting){.speeds = {value, value}, .directions = {FORWARD, FORWARD}};
       }
       break;
+      
     case TURN:
-    break;
+      break;
+      
     case SPIN:
-      // ccw is positive for now
+      // ccw is positive (for now) =============================================================================================================================================
       if (value > 0) {
         return (MotorSetting){.speeds = {value, value}, .directions = {BACKWARD, FORWARD}};
-      } else {
+      }
+      else {
         return (MotorSetting){.speeds = {abs(value), abs(value)}, .directions = {FORWARD, BACKWARD}};
       }
-    break;
+      break;
   }
 }
