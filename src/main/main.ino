@@ -39,7 +39,7 @@ float distanceError = 0;
 
 // Flags to indicate reversing or stopping
 bool MOTORSREVERSED = false;
-bool robotStopped = true;
+bool programHalted = true; // to indicate if the program is running
 bool turnNotStarted = true;
 
 // Timer to check how long program has lasted for 
@@ -158,7 +158,7 @@ void setMotors(Movement::MotorSetting mSetting) {
   
   else if (mSetting.speeds[0] == 0 && mSetting.speeds[1] == 0 && motorsActive) { // We have asked it to stop moving motorsActive flag is still false
     motorsActive = false;
-    robotStopped = true;
+    programHalted = true;
     digitalWrite(oLed.pin, false);
   }
 }
@@ -200,7 +200,7 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
         if (abs(angleError) > 1) { // More than 1 degree or so away, cannot be perfect
           if (turnNotStarted) {
             lastMillis = nowMillis;
-            turnNotStarted = false; /////////////////// keep a track of!! =============================================================================================
+            turnNotStarted = false; // keep a track of =============================================================================================
           }
           float gx, gy, gz;
           
@@ -209,7 +209,7 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
             l.logln(String(gz + 0.45) + " " + String(angleError));
             // get the angular dispacement since last time
             // might need to set last millis to the current time when a turn is started to avoid large errors
-            float angleDelta = (gz + 0.45)*(nowMillis - lastMillis)/1000;
+            float angleDelta = (gz + 0.45)*(nowMillis - lastMillis)/1000; // the 0.45 offset is to account for the fact that the suspended vehicle (not rotating) seems to read a -ve value
             // update angle error with dθ
             // set motors to kp*angle error
             if (angleError < 0) {
@@ -290,11 +290,11 @@ void commandHandler(Movement::FollowLine* lineFollowerPtr, String command) {
   
   if (command == "stop" || command == "stopstop") {
     l.logln("stopping");
-    robotStopped = true;
+    programHalted = true;
   } 
   else if (command == "go" || command == "gogo") {
     l.logln("starting");
-    robotStopped = false;
+    programHalted = false;
   }
 }
 
@@ -309,7 +309,7 @@ void loop() {
   //servo.write(min(180, int(currentMillis/100)));
 
   // the main movement code 
-  if (robotStopped) {
+  if (programHalted) {
     setMotors(Movement::getMovement(Movement::STOP, 0));
     //l.logln(analogRead(distSensor.pin));
     if (analogRead(distSensor.pin) < 800) { // change based on an appropriate distance we can get to the block
@@ -333,8 +333,8 @@ void loop() {
     
   } 
   else {
-    int lineVal = getLineVal(rightSensor, leftSensor); 
-    l.logln(String(analogRead(leftSensor.pin)) + " " + String(analogRead(rightSensor.pin))); // just print out 
+//    int lineVal = getLineVal(rightSensor, leftSensor); 
+    l.logln(String(analogRead(leftSensor.pin)) + " " + String(analogRead(rightSensor.pin))); // just print out sensors for calibration
 //    setMotors(lineFollower->getMotorSetting(lineVal));
 //    setMotors((Movement::MotorSetting){.speeds = {fSpeed, fSpeed}, .directions = {FORWARD, FORWARD}});
 //    setMotors(getMovementFromStage(currentStage, lineVal));
