@@ -10,6 +10,7 @@ using namespace Movement;
 //                 \ ^ /
 //                  \o/
 MotorSetting FollowLine::getMotorSetting(int cols) {
+  Serial.println("line following");
   unsigned long nowMillis = millis();
   // create new motorsetting struct
   MotorSetting mSetting;
@@ -18,7 +19,7 @@ MotorSetting FollowLine::getMotorSetting(int cols) {
 //    mSetting = {.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
 //    return mSetting;
 //  }
-  if (!turning || nowMillis - turnStart > turnDuration) {
+  if (true){//!turning || nowMillis - turnStart > turnDuration) {
     // if there is not a turn taking place or it has elapsed
 
     //set the turning flag to false
@@ -56,6 +57,9 @@ MotorSetting FollowLine::getMotorSetting(int cols) {
   } else if (turning) {
     mSetting = currentTurn;
   }
+
+  mSetting = {.speeds = {fSpeed, fSpeed}, .directions = {FORWARD, FORWARD}};
+  
   return mSetting;
 }
 

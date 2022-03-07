@@ -27,7 +27,7 @@ const int distSensorPin =   A2;  // OPB704 Voltage (goes down with decreasing di
 // ==============================================================================================
 const int fSpeed =         210; // motor speed for general movement
 // ==============================================================================================
-float kp =                 0.5; // kp for turning
+float kp =                 1.8; // kp for turning
 // ==============================================================================================
 
 enum Color {BLUE, RED};
@@ -41,6 +41,7 @@ bool robotStopped = true;
 
 unsigned long lastMillis = 0;
 bool turnNotStarted = true;
+programStageName currentStage = TURN_TO_BLOCK;
 
 
 
@@ -118,6 +119,12 @@ void setup() {
 
   // initialise the motors
   AFMS.begin();
+
+  digitalWrite(gLed.pin, true);
+  digitalWrite(oLed.pin, true);
+  digitalWrite(rLed.pin, true);
+
+  angleError = 360 *0.8*1.1; // change these mutlipliers based on mass difference
   
 }
 
@@ -125,9 +132,11 @@ void setup() {
 // general function to apply a motorSetting struct onto the motors
 void setMotors(Movement::MotorSetting mSetting) {
   //l.logln("motors set");
-  
-  leftMotor->setSpeed(mSetting.speeds[0]);
-  rightMotor->setSpeed(mSetting.speeds[1]);
+  Serial.print(mSetting.speeds[0]);
+  Serial.print(" ");
+  Serial.println(mSetting.speeds[1]);
+  leftMotor->setSpeed(min(mSetting.speeds[0], 255));
+  rightMotor->setSpeed(min(mSetting.speeds[1], 255));
   
   // handle if the motors are reversed so forward -> backward
   if (!MOTORSREVERSED) {
@@ -151,7 +160,7 @@ void setMotors(Movement::MotorSetting mSetting) {
   } else if (mSetting.speeds[0] == 0 && mSetting.speeds[1] == 0 && motorsActive) {
     motorsActive = false;
     robotStopped = true;
-    digitalWrite(oLed.pin, false);
+    //digitalWrite(oLed.pin, false);
   }
 }
 
@@ -182,12 +191,14 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
         //l.logln("stopped");
         return Movement::getMovement(Movement::STOP, 0);
         break;
-        
+
+      case TURN_TO_BLOCK:
       case MOVE_TO_LINE_FROM_BLOCK:
       case MOVE_TO_DROP_ZONE:
       case MOVE_TO_LINE_FROM_DROP:
+        Movement::MotorSetting mSetting;
         unsigned long nowMillis = millis();
-        if (abs(angleError) > 0.02) {
+        if (abs(angleError) > 1) {
           if (turnNotStarted) {
             lastMillis = nowMillis;
             turnNotStarted = false; /////////////////// keep a track of!! ===============================
@@ -195,22 +206,30 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
           float gx, gy, gz;
           // get angular velocity
           if (IMU.gyroscopeAvailable() && IMU.readGyroscope(gx, gy, gz)) {
+            l.logln(String(gz + 0.45) + " " + String(angleError));
             // get the angular dispacement since last time
             // might need to set last millis to the current time when a turn is started to avoid large errors
-            float angleDelta = gz*(nowMillis - lastMillis)/1000;
-            // set motors to kp*angle error
-            Movement::getMovement(Movement::SPIN, (int)kp*angleError);
+            float angleDelta = (gz + 0.45)*(nowMillis - lastMillis)/1000;
             // update angle error with dθ
+            // set motors to kp*angle error
+            if (angleError < 0) {
+              mSetting =  Movement::getMovement(Movement::SPIN, min((int)kp*angleError, -80));
+            } else {
+              mSetting =  Movement::getMovement(Movement::SPIN, max((int)kp*angleError, 80));
+            }
             angleError -= angleDelta;
           }
+        } else {
+          return Movement::getMovement(Movement::STOP, 0);
         }
         // else if dist error > threshold
 
         // else
         //   end stage as they are small enough
 
-        
         lastMillis = nowMillis;
+
+        return mSetting;
         break;
       default:
         return Movement::getMovement(Movement::STOP, 0);
@@ -283,6 +302,7 @@ unsigned long previousMillis = 0;
 unsigned long oLedInterval = 500;
 
 void loop() {
+  Serial.println("loop");
   //put your main code here, to run repeatedly:
   unsigned long currentMillis = millis();
 
@@ -297,37 +317,42 @@ void loop() {
       l.logln(String(analogRead(rLDR.pin)) + " " + String(analogRead(bLDR.pin)));
       delay(10);
       Color blockCol = getColorVal(rLDR, bLDR);
-      if (blockCol == BLUE) {
-        l.logln("blue");
-        digitalWrite(gLed.pin, true);
-        delay(100);                              // change to 5100
-        digitalWrite(gLed.pin, false);
-      } else {
-        l.logln("red");
-        digitalWrite(rLed.pin, true);
-        delay(100);                              // change to 5100
-        digitalWrite(rLed.pin, false);
-      }
+//      if (blockCol == BLUE) {
+//        l.logln("blue");
+//        digitalWrite(gLed.pin, true);
+//        delay(100);                              // change to 5100
+//        digitalWrite(gLed.pin, false);
+//      } else {
+//        l.logln("red");
+//        digitalWrite(rLed.pin, true);
+//        delay(100);                              // change to 5100
+//        digitalWrite(rLed.pin, false);
+//      }
     }
   } else {
     int lineVal = getLineVal(rightSensor, leftSensor);
-    Serial.println(lineVal);
-    setMotors(lineFollower->getMotorSetting(lineVal));
+//    Serial.println(lineVal);
+    //setMotors(lineFollower->getMotorSetting(lineVal));
+    setMotors((Movement::MotorSetting){.speeds = {fSpeed, fSpeed}, .directions = {FORWARD, FORWARD}});
+    //setMotors(getMovementFromStage(currentStage, lineVal));
+//    setMotors(getMovementFromStage(LONG_TRAVERSE_0, lineVal));
   }
 
-  // led flashes if the motors are active
-  if (motorsActive) {
-    if (currentMillis - previousMillis >= oLedInterval) {
-      // save the last time you blinked the LED
-      previousMillis = currentMillis;
-  
-      // set the LED with the ledState of the variable:
-      digitalWrite(oLed.pin, !oLed.state);
-      oLed.state = !oLed.state;
-    }
-  }
+//  // led flashes if the motors are active
+//  if (motorsActive) {
+//    if (currentMillis - previousMillis >= oLedInterval) {
+//      // save the last time you blinked the LED
+//      previousMillis = currentMillis;
+//  
+//      // set the LED with the ledState of the variable:
+//      digitalWrite(oLed.pin, !oLed.state);
+//      oLed.state = !oLed.state;
+//    }
+//  }
 
   // scan for any commands in the BT or USB serial buffers
   if (Serial.available() > 0) {commandHandler(lineFollower, getSerialCommand());}
   if (SerialNina.available() > 0) {commandHandler(lineFollower, getBTSerialCommand());}
+
+  //delay(5);
 }
