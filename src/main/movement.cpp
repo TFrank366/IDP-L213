@@ -7,20 +7,26 @@ using namespace Movement;
 
 // takes an input integer that represents state of the sensors as bits
 MotorSetting FollowLine::getMotorSetting(int cols) {
-  Serial.println("line following"); // acknowledges that it is going to follow the line
+  MotorSetting mSetting;
+  fSpeed = 210;
   unsigned long nowMillis = millis();
+  Serial.println(fSpeed);
+  Serial.println("line following"); // acknowledges that it is going to follow the line
+  Serial.println(cols);
+  
   
   // create new MotorSetting struct named "mSetting", like how the Led structs have "rLed"
-  MotorSetting mSetting;
+  
   
   // if both are on then stop regardless of whether a turn is in progress
   // means that it has hit a junction, so it must stop
-  if (cols == 0b11) {
-    mSetting = {.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
-    return mSetting;
-  }
+//  if (cols == 0b11) {
+//    mSetting = {.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
+//    return mSetting;
+//  }
   
   if (!turning || nowMillis - turnStart > turnDuration) {
+    Serial.println(fSpeed);
     // if there is not a turn taking place or it has elapsed
     turning = false;  // set the turning flag to false
 
@@ -59,23 +65,27 @@ MotorSetting FollowLine::getMotorSetting(int cols) {
     mSetting = currentTurn;
   }
 
-  mSetting = {.speeds = {fSpeed, fSpeed}, .directions = {FORWARD, FORWARD}};
-  
+  //mSetting = {.speeds = {200, 200}, .directions = {FORWARD, FORWARD}};
+  Serial.println("end");
+  Serial.println(mSetting.speeds[0]);
+  Serial.println(fSpeed);
+  Serial.println(turnAmount);
+  Serial.println(turnDuration);
   return mSetting;
 }
 
-void FollowLine::setParams (int fS, int tAmount, unsigned long tDuration) {
-  fSpeed = fS;
-  turnAmount = tAmount;
-  turnDuration = tDuration;
-}
-
-FollowLine::FollowLine (int fS, int tAmount, unsigned long tDuration) {
-  fSpeed = fS;
-  turnAmount = tAmount;
-  turnDuration = tDuration;
-  turning = false;
-}
+//void FollowLine::setParams (int fS, int tAmount, unsigned long tDuration) {
+//  fSpeed = fS;
+//  turnAmount = tAmount;
+//  turnDuration = tDuration;
+//}
+//
+//FollowLine::FollowLine (int fS, int tAmount, unsigned long tDuration) {
+//  fSpeed = 200;
+//  turnAmount = tAmount;
+//  turnDuration = tDuration;
+//  turning = false;
+//}
 
 
 MotorSetting Movement::getMovement(MoveType moveType, int value) {
@@ -105,5 +115,26 @@ MotorSetting Movement::getMovement(MoveType moveType, int value) {
         return (MotorSetting){.speeds = {abs(value), abs(value)}, .directions = {FORWARD, BACKWARD}};
       }
       break;
+    
+    case LINE_FOLLOW:
+      int speed0 = 210;
+      int speedPlus = speed0 + 35;
+      int speedMinus = speed0 - 35;
+      switch (value) {
+        // line only on right sensor
+        // have to turn right
+        case 0b01: 
+          return (MotorSetting){.speeds = {speedPlus, abs(speedMinus)}, .directions = {FORWARD, FORWARD}};
+          break;
+         // line only on left sensor
+         // have to turn left
+         case 0b10:
+          return (MotorSetting){.speeds = {abs(speedMinus), speedPlus}, .directions = {FORWARD, FORWARD}};
+          break;
+         default: // ie case 0b00
+          // go straight ahead
+          return (MotorSetting){.speeds = {speed0, speed0}, .directions = {FORWARD, FORWARD}};
+          break;
+      }
   }
 }

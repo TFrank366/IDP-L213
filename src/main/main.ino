@@ -25,7 +25,7 @@ const int bLDRPin =         A3;  // Protoboard configuration, do not change unne
 const int rLDRPin =         A2;  // Protoboard configuration, do not change unnecessarily
 const int distSensorPin =   A1;  // Protoboard configuration, do not change unnecessarily
 // ==============================================================================================
-const int fSpeed =         210; // motor speed for general movement (see movement.cpp)
+//const int fSpeed =         210; // motor speed for general movement (see movement.cpp)
 // ==============================================================================================
 float kp =                 1.8; // kp for turning
 // ==============================================================================================
@@ -64,7 +64,7 @@ Adafruit_DCMotor *leftMotor = AFMS.getMotor(3);
 Adafruit_DCMotor *rightMotor = AFMS.getMotor(4);
 
 // connects to servos to command servo movement
-// Servo servo;
+Servo servo;
 // 162 is fully closed
 // 105 is open
 
@@ -86,17 +86,19 @@ Sensor bLDR;
 bool motorsActive = false;
 
 // handles line following
-Movement::FollowLine* lineFollower(fSpeed, 35, (unsigned long)100);
+//Movement::FollowLine* lineFollower(210, 35, (unsigned long)100);
 
 void setup() {
   // setup serial link and bluetooth 
   Serial.begin(9600);
+  Serial.println("Serial up");
   pinMode(NINA_RESETN, OUTPUT);         
   digitalWrite(NINA_RESETN, LOW);
   SerialNina.begin(115200);
   
   // initialise IMU for gyroscope
   IMU.begin();
+  Serial.println("IMU up");
 
   // Startup phrase
   Serial.println("hello world");
@@ -108,7 +110,8 @@ void setup() {
   rLed = {.pin = rLedPin};
   pinMode(gLedPin, OUTPUT);
   gLed = {.pin = gLedPin};
-
+  Serial.println("leds setup");
+  
   // initialise the sensors
   pinMode(rightSensorPin, INPUT);
   rightSensor.pin = rightSensorPin;
@@ -121,12 +124,16 @@ void setup() {
   pinMode(rLDRPin, INPUT);
   rLDR.pin = rLDRPin;
 
+  Serial.println("sensors setup");
+
   // initialise the motors
   AFMS.begin();
+  Serial.println("Motor shield up");
 
   float actual_angle_error = 360; // this will be the value that we need to actually shift the robot by. Note that this can be a signed angle to indicate direction!
   angleError = actual_angle_error*0.8*1.1; // change these multipliers if necessary, since gyro does not have perfect accuracy re angular velocity
-  
+
+  //servo.attach();
 }
 
 // general function to apply a motorSetting struct onto the motors
@@ -181,7 +188,9 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
         
       case LONG_TRAVERSE_0:
       case LONG_TRAVERSE_1:
-        return lineFollower->getMotorSetting(lineVal);
+        // check is we've hit a crossing
+        //return lineFollower->getMotorSetting(lineVal);
+        return Movement::getMovement(Movement::LINE_FOLLOW, lineVal);
         break;
         
       case SENSE_BLOCK_COLOR:
@@ -239,13 +248,28 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
     }
 }
 
-
-int getLineVal(Sensor s1, Sensor s2) {
+int getLineVal(Sensor left, Sensor right) {
   int lineVal = 0;
-  lineVal |= analogRead(s1.pin) < 25; // change the read values based on line reading ==============================================================
+  lineVal |= analogRead(right.pin) < 25; // change the read values based on line reading ==============================================================
   delay(10);
-  lineVal |= (analogRead(s2.pin) < 25) << 1; // change the read values based on line reading ==============================================================
+  lineVal |= (analogRead(left.pin) < 700) << 1; // change the read values based on line reading ==============================================================
   return lineVal;
+}
+
+String getValsString(Sensor left, Sensor right) { // this function is to print out line follower sensor values
+  int a  = analogRead(left.pin);
+  delay(10);
+  int b  = analogRead(right.pin);
+  delay(10);
+  return String(a) + " " + String(b);
+}
+
+String getValsStringBin(Sensor left, Sensor right) { // this function is to print out line follower sensor values
+  int a  = analogRead(left.pin) < 700;
+  delay(10);
+  int b  = analogRead(right.pin) < 25;
+  delay(10);
+  return String(a) + " " + String(b);
 }
 
 // gets the colour of what is in front of the colour sensor
@@ -254,7 +278,7 @@ int getLineVal(Sensor s1, Sensor s2) {
 Color getColorVal(Sensor rLDR, Sensor bLDR) {
   int bVal = analogRead(bLDR.pin);
   int rVal = analogRead(rLDR.pin);
-  if (bVal < rVal - 200){ // Since rVal always seems to be reading more than bVal, change accordingly ==============================================================
+  if (bVal < rVal){ // Since rVal always seems to be reading more than bVal, change accordingly ==============================================================
     return BLUE;
   } 
   else {
@@ -262,13 +286,7 @@ Color getColorVal(Sensor rLDR, Sensor bLDR) {
   }
 }
 
-String getValsString(Sensor s1, Sensor s2) { // this function is to print out line follower sensor values
-  int a  = analogRead(s1.pin);
-  delay(10);
-  int b  = analogRead(s2.pin);
-  delay(10);
-  return String(a) + " " + String(b);
-}
+
 
 // serial command reciever
 String getSerialCommand() {
@@ -286,7 +304,7 @@ String getBTSerialCommand() {
 }
 
 // What does every input command to the Arduino do (raises flags that have corresponding actions)
-void commandHandler(Movement::FollowLine* lineFollowerPtr, String command) {
+void commandHandler(String command) {
   l.logln("command received");
   
   if (command == "stop" || command == "stopstop") {
@@ -304,7 +322,7 @@ unsigned long oLedInterval = 500; // for 2Hz flashing of oLed
 
 void loop() {
   //put your main code here, to run repeatedly:
-  //Serial.println("loop"); // to check if the loop is running
+  Serial.println("loop"); // to check if the loop is running
   unsigned long currentMillis = millis();
 
   // the main movement code 
@@ -334,12 +352,12 @@ void loop() {
     
   } 
   else {
-//    int lineVal = getLineVal(rightSensor, leftSensor); 
-    l.logln(getValsString(leftSensor, rightSensor)); // just print out sensors for calibration
-//    setMotors(lineFollower->getMotorSetting(lineVal));
-//    setMotors((Movement::MotorSetting){.speeds = {fSpeed, fSpeed}, .directions = {FORWARD, FORWARD}});
+    int lineVal = getLineVal(leftSensor, rightSensor); 
+    l.logln(getValsStringBin(leftSensor, rightSensor)); // just print out sensors for calibration
+    //setMotors(lineFollower->getMotorSetting(lineVal));
+    //setMotors((Movement::MotorSetting){.speeds = {fSpeed, fSpeed}, .directions = {FORWARD, FORWARD}});
 //    setMotors(getMovementFromStage(currentStage, lineVal));
-//    setMotors(getMovementFromStage(LONG_TRAVERSE_0, lineVal));
+      setMotors(getMovementFromStage(LONG_TRAVERSE_0, lineVal));
     }
 
 //  oLed flashes if the motors are active
@@ -354,7 +372,7 @@ void loop() {
   }
 
   // scan for any commands in the BT or USB serial buffers
-  if (Serial.available() > 0) {commandHandler(lineFollower, getSerialCommand());}
-  if (SerialNina.available() > 0) {commandHandler(lineFollower, getBTSerialCommand());}
+  if (Serial.available() > 0) {commandHandler(getSerialCommand());}
+  if (SerialNina.available() > 0) {commandHandler(getBTSerialCommand());}
 
 }

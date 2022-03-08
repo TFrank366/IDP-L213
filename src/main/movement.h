@@ -15,15 +15,17 @@ namespace Movement{
     STOP,
     STRAIGHT,
     TURN,
-    SPIN
+    SPIN,
+    LINE_FOLLOW
  };
 
 // to perform line following
   class FollowLine {
-    public:
-      FollowLine (int, int, unsigned long);
+    private:
       int fSpeed;
       bool turning;
+    public:
+      FollowLine (int, int, unsigned long);
       MotorSetting currentTurn;
       int turnAmount;
       unsigned long turnStart;
