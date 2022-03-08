@@ -64,7 +64,9 @@ Adafruit_DCMotor *leftMotor = AFMS.getMotor(3);
 Adafruit_DCMotor *rightMotor = AFMS.getMotor(4);
 
 // connects to servos to command servo movement
-Servo servo;
+// Servo servo;
+// 162 is fully closed
+// 105 is open
 
 // create led structs
 Led oLed;
@@ -138,7 +140,6 @@ void setMotors(Movement::MotorSetting mSetting) {
     leftMotor->run(mSetting.directions[0]);
     rightMotor->run(mSetting.directions[1]);
   } 
-  
   else { // ie supposed to be going backward
     if (mSetting.directions[0] == FORWARD) {
       leftMotor->run(BACKWARD);
@@ -241,9 +242,9 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
 
 int getLineVal(Sensor s1, Sensor s2) {
   int lineVal = 0;
-  lineVal |= analogRead(s1.pin) < 25; // change the read values based on line reading
+  lineVal |= analogRead(s1.pin) < 25; // change the read values based on line reading ==============================================================
   delay(10);
-  lineVal |= (analogRead(s2.pin) < 25) << 1; // change the read values based on line reading
+  lineVal |= (analogRead(s2.pin) < 25) << 1; // change the read values based on line reading ==============================================================
   return lineVal;
 }
 
@@ -262,9 +263,9 @@ Color getColorVal(Sensor rLDR, Sensor bLDR) {
 }
 
 String getValsString(Sensor s1, Sensor s2) { // this function is to print out line follower sensor values
-  int a  = analogRead(s2.pin);
+  int a  = analogRead(s1.pin);
   delay(10);
-  int b  = analogRead(s1.pin);
+  int b  = analogRead(s2.pin);
   delay(10);
   return String(a) + " " + String(b);
 }
@@ -306,9 +307,9 @@ void loop() {
   //Serial.println("loop"); // to check if the loop is running
   unsigned long currentMillis = millis();
 
-  //servo.write(min(180, int(currentMillis/100)));
-
   // the main movement code 
+  // this part will probably have to move under GRAB_BLOCK stage
+  
   if (programHalted) {
     setMotors(Movement::getMovement(Movement::STOP, 0));
     //l.logln(analogRead(distSensor.pin));
@@ -334,7 +335,7 @@ void loop() {
   } 
   else {
 //    int lineVal = getLineVal(rightSensor, leftSensor); 
-    l.logln(String(analogRead(leftSensor.pin)) + " " + String(analogRead(rightSensor.pin))); // just print out sensors for calibration
+    l.logln(getValsString(leftSensor, rightSensor)); // just print out sensors for calibration
 //    setMotors(lineFollower->getMotorSetting(lineVal));
 //    setMotors((Movement::MotorSetting){.speeds = {fSpeed, fSpeed}, .directions = {FORWARD, FORWARD}});
 //    setMotors(getMovementFromStage(currentStage, lineVal));
