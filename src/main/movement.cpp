@@ -5,7 +5,8 @@
 
 using namespace Movement;
 
-MotorSetting Movement::getMovement(MoveType moveType, int value) {
+// value is used for speed, value2 is used by the line follower
+MotorSetting Movement::getMovement(MoveType moveType, int value, int value2) {
   switch (moveType) {
     case STOP:
       return (MotorSetting){.speeds = {0, 0}, .directions = {FORWARD, FORWARD}};
@@ -34,10 +35,10 @@ MotorSetting Movement::getMovement(MoveType moveType, int value) {
       break;
     
     case LINE_FOLLOW:
-      int speed0 = 210;
-      int speedPlus = speed0 + 35;
-      int speedMinus = speed0 - 35;
-      switch (value) {
+      int speed0 = value;
+      int speedPlus = speed0 + (int)speed0*0.14;
+      int speedMinus = speed0 - (int)speed0*0.14;
+      switch (value2) {
         // line only on right sensor
         // have to turn right
         case 0b01: 

@@ -17,8 +17,8 @@ enum programStageName {
   RAISE_BLOCK,
   MOVE_TO_LINE_FROM_BLOCK,
   LONG_TRAVERSE_1, // collection -> deposit
-  MOVE_TO_DROP_ZONE,
   LOWER_BLOCK,
+  MOVE_TO_DROP_ZONE,
   DROP_BLOCK,
   MOVE_TO_LINE_FROM_DROP,
 };

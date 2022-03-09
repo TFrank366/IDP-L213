@@ -19,7 +19,7 @@ namespace Movement{
     LINE_FOLLOW
  };
 
-  MotorSetting getMovement(MoveType, int);
+  MotorSetting getMovement(MoveType, int, int);
   
 }
 
