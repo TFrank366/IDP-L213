@@ -19,21 +19,6 @@ namespace Movement{
     LINE_FOLLOW
  };
 
-// to perform line following
-  class FollowLine {
-    private:
-      int fSpeed;
-      bool turning;
-    public:
-      FollowLine (int, int, unsigned long);
-      MotorSetting currentTurn;
-      int turnAmount;
-      unsigned long turnStart;
-      unsigned long turnDuration;
-      void setParams(int, int, unsigned long);
-      MotorSetting getMotorSetting (int);
-  };
-
   MotorSetting getMovement(MoveType, int);
   
 }
