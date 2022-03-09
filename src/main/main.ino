@@ -168,6 +168,12 @@ void setup() {
   //servo.attach();
 
   currentStage = TURN_TO_BLOCK;
+//  clawServo.write(clawServoOpen);
+//  armServo.write(armServoDown);
+//  delay(2000);  
+//  clawServo.write(clawServoClosed);
+//  delay(1000);
+//  armServo.write(armServoUp);
 }
 
 // general function to apply a motorSetting struct onto the motors
@@ -213,6 +219,7 @@ unsigned long nowMillis;
 float angleDelta;
 bool grabStarted = false;
 int clawPos;
+Movement::MotorSetting mSetting;
 
 bool checkForCrossing(int lineVal) {
   if (lastLineVals[0] != 0b11 && lastLineVals[1] != 0b11 && lineVal == 0b11) {
@@ -235,10 +242,13 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
     case MOVE_TO_LINE_FROM_BLOCK:
     case MOVE_TO_DROP_ZONE:
     case MOVE_TO_LINE_FROM_DROP:
-    case TURN_TO_BLOCK:
-      armServo.write(armServoDown);
+      // spin 180;
+      if (turnNotStarted) {
+          angleError = 180;
+          lastMillis = nowMillis;
+          turnNotStarted = false; // keep a track of =============================================================================================
+        }
       //Serial.println("turning");
-      Movement::MotorSetting mSetting;
       nowMillis = millis();
       if (abs(angleError) > 1) { // More than 1 degree or so away, cannot be perfect
         if (turnNotStarted) {
@@ -268,6 +278,55 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
       }
       lastMillis = nowMillis;
       return mSetting;
+      break;
+
+    case TURN_TO_BLOCK:
+      armServo.write(armServoDown);
+      //Serial.println("turning");
+      nowMillis = millis();
+      if (abs(angleError) > 1) { // More than 1 degree or so away, cannot be perfect
+        if (turnNotStarted) {
+          lastMillis = nowMillis;
+          turnNotStarted = false; // keep a track of =============================================================================================
+        }
+        // get angular velocity
+        if (IMU.gyroscopeAvailable() && IMU.readGyroscope(gx, gy, gz)) {
+          Serial.println(angleError);
+          //l.logln(String(gz + 0.45) + " " + String(angleError));
+          // get the angular dispacement since last time
+          // might need to set last millis to the current time when a turn is started to avoid large errors
+          angleDelta = ((gz + 0.45) / 1000) * (nowMillis - lastMillis) ; // the 0.45 offset is to account for the fact that the suspended vehicle (not rotating) seems to read a -ve value
+          // update angle error with dθ
+          // set motors to kp*angle error
+          if (angleError < 0) {
+            mSetting =  Movement::getMovement(Movement::SPIN, min((int)kp * angleError, -80), 0);
+          }
+          else {
+            mSetting =  Movement::getMovement(Movement::SPIN, max((int)kp * angleError, 80), 0);
+          }
+          angleError -= angleDelta / (0.8 * 1.1);
+        }
+      } else {
+        stageShouldAdvance = true;
+        return Movement::getMovement(Movement::STOP, 0, 0); // stops when angle has been reached
+      }
+      lastMillis = nowMillis;
+      return mSetting;
+      break;
+
+    case RAISE_BLOCK:
+      // raise arm servo in a loop
+      l.logln("arn raising");
+      armServo.write(armServoUp);
+      delay(1000);
+      l.logln("arm raised");
+      stageShouldAdvance = true;
+      return Movement::getMovement(Movement::STOP, 0, 0);
+//      for (int i = armServoDown; i < armServoUp; i++) {
+//        armServo.write(i);
+//        delay(5);
+//      }
+      
       break;
     
     case START:
@@ -347,13 +406,7 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
       stageShouldAdvance = true;
       break;
      
-    case RAISE_BLOCK:
-      // raise arm servo in a loop
-      return Movement::getMovement(Movement::STOP, 0, 0);
-      for (int i = armServoDown; i < armServoUp; i++) {
-        armServo.write(i);
-      }
-      break;
+    
     case LOWER_BLOCK:
       // lower arm servo in a loop
       // return Movement::getMovement(Movement::STOP, 0, 0);

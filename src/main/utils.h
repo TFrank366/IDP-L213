@@ -8,19 +8,19 @@
 enum Mode {USB, BT, BOTH};
 
 enum programStageName {
-  START,
-  LONG_TRAVERSE_0, // deposit -> collection
-  TURN_TO_BLOCK,
-  MOVE_TO_BLOCK, // move slower here
-  SENSE_BLOCK_COLOR,
-  GRAB_BLOCK,
-  RAISE_BLOCK,
-  MOVE_TO_LINE_FROM_BLOCK,
-  LONG_TRAVERSE_1, // collection -> deposit
-  LOWER_BLOCK,
-  MOVE_TO_DROP_ZONE,
-  DROP_BLOCK,
-  MOVE_TO_LINE_FROM_DROP,
+  START,                                         //0
+  LONG_TRAVERSE_0, // deposit -> collection      //1
+  TURN_TO_BLOCK,                                 //2
+  MOVE_TO_BLOCK, // move slower here             //3
+  SENSE_BLOCK_COLOR,                             //4
+  GRAB_BLOCK,                                    //5
+  RAISE_BLOCK,                                   //6
+  MOVE_TO_LINE_FROM_BLOCK,                       //7
+  LONG_TRAVERSE_1, // collection -> deposit      //8
+  LOWER_BLOCK,                                   //9
+  MOVE_TO_DROP_ZONE,                             //10
+  DROP_BLOCK,                                    //11
+  MOVE_TO_LINE_FROM_DROP,                        //12
 };
 
 class Logger {
