@@ -20,8 +20,6 @@ namespace Movement{
  };
 
   MotorSetting getMovement(MoveType, int, int);
-
-  int lastlinevalue;
 }
 
 

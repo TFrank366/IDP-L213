@@ -36,8 +36,9 @@ MotorSetting Movement::getMovement(MoveType moveType, int value, int value2) {
     
     case LINE_FOLLOW:
       int speed0 = value;
-      int speedPlus = speed0 + (int)speed0*0.17; // changing sharpness of turn 
-      int speedMinus = speed0 - (int)speed0*0.17; // changing sharpness of turn
+      float turn_sharpness = 0.25; // ================================================================ changes based on the weight
+      int speedPlus = speed0 + (int)speed0*turn_sharpness; // changing sharpness of turn 
+      int speedMinus = speed0 - (int)speed0*turn_sharpness; // changing sharpness of turn
       MotorSetting mSetting;
       switch (value2) {
         // line only on right sensor
@@ -50,19 +51,12 @@ MotorSetting Movement::getMovement(MoveType moveType, int value, int value2) {
          case 0b10:
           mSetting = (MotorSetting){.speeds = {abs(speedMinus), speedPlus}, .directions = {FORWARD, FORWARD}};
           break;
-         default: // ie case 0b00 or 0b11
-          // go straight ahead
-          if (lastlinevalue = 0b10) {
-            mSetting = (MotorSetting){.speeds = {speedPlus, abs(speedMinus)}, .directions = {FORWARD, FORWARD}};
-          } else if (lastlinevalue = 0b01) {
-            mSetting = (MotorSetting){.speeds = {abs(speedMinus), speedPlus}, .directions = {FORWARD, FORWARD}};
-          }
-          
+         default: // ie case 0b00 or 0b11   
           mSetting = (MotorSetting){.speeds = {speed0, speed0}, .directions = {FORWARD, FORWARD}};
           break;
       }
 
-      lastlinevalue = value2;
+//      lastlinevalue = value2;
       return mSetting;
   }
 }
