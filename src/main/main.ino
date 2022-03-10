@@ -126,7 +126,6 @@ void setup() {
   SerialNina.begin(115200);
 
 
-
   // initialise IMU for gyroscope
   IMU.begin();
   Serial.println("IMU up");
@@ -167,13 +166,7 @@ void setup() {
 
   //servo.attach();
 
-  currentStage = TURN_TO_BLOCK;
-//  clawServo.write(clawServoOpen);
-//  armServo.write(armServoDown);
-//  delay(2000);  
-//  clawServo.write(clawServoClosed);
-//  delay(1000);
-//  armServo.write(armServoUp);
+  currentStage = START;
 }
 
 // general function to apply a motorSetting struct onto the motors
@@ -244,7 +237,7 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
     case MOVE_TO_LINE_FROM_DROP:
       // spin 180;
       if (turnNotStarted) {
-          angleError = 180;
+          angleError = 177; // =============================== change to 175 for now for a less sharp turn
           lastMillis = nowMillis;
           turnNotStarted = false; // keep a track of =============================================================================================
         }
@@ -351,7 +344,7 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
         return Movement::getMovement(Movement::STOP, 0, 0);
       } else if (programIteration == 0){
         // if block is too far away, keep moving towards it
-        return Movement::getMovement(Movement::LINE_FOLLOW, fSpeed/3, lineVal);
+        return Movement::getMovement(Movement::LINE_FOLLOW, fSpeed/2, lineVal);
       } else { 
        return Movement::getMovement(Movement::STRAIGHT, 70, 0);
       }
@@ -374,7 +367,6 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
       break;
 
     case LONG_TRAVERSE_0:
-    case LONG_TRAVERSE_1:
       //Serial.println("line follow");
       // check is we've hit a crossing
       if (checkForCrossing(lineVal)) {
@@ -382,6 +374,20 @@ Movement::MotorSetting getMovementFromStage(programStageName stageName, int line
         l.logln("lf crossing");
       }
       if (currentCrossingCount == 1) {
+        stageShouldAdvance = true;
+        return Movement::getMovement(Movement::STOP, 0, 0);
+      } else {
+        return Movement::getMovement(Movement::LINE_FOLLOW, fSpeed, lineVal);
+      }
+      break;
+    case LONG_TRAVERSE_1:
+      //Serial.println("line follow");
+      // check is we've hit a crossing
+      if (checkForCrossing(lineVal)) {
+        currentCrossingCount++;
+        l.logln("lf crossing");
+      }
+      if (currentCrossingCount == 2) {
         stageShouldAdvance = true;
         return Movement::getMovement(Movement::STOP, 0, 0);
       } else {
@@ -522,7 +528,7 @@ void loop() {
       advanceStage();
     } else {
       int lineVal = getLineVal(leftSensor, rightSensor);
-      l.logln(lineVal);
+//      l.logln(lineVal);
       //Serial.println(currentStage);
       setMotors(getMovementFromStage(currentStage, lineVal));
       //setMotors(getMovement(Movement::SPIN, 150));
@@ -539,6 +545,32 @@ void loop() {
       oLed.state = !oLed.state;
     }
   }
+//
+//float linegx;
+//float linegy;
+//float linegz;
+//
+//  if (IMU.gyroscopeAvailable() && IMU.readGyroscope(linegx, linegy, linegz)) {
+////        Serial.println(angleError);
+//        //l.logln(String(gz + 0.45) + " " + String(angleError));
+//        // get the angular dispacement since last time
+//        // might need to set last millis to the current time when a turn is started to avoid large errors
+//        linenowMillis = millis();
+//        float linelastMillis;
+//      if (abs(angleError) > 1) { // More than 1 degree or so away, cannot be perfect
+//        if (turnNotStarted) {
+//          linelastMillis = linenowMillis;
+//          turnNotStarted = false;
+//        float lineangleDelta = ((linegz + 0.45) / 1000) * (nowMillis - lastMillis) ; // the 0.45 offset is to account for the fact that the suspended vehicle (not rotating) seems to read a -ve value
+//        // update angle error with dθ
+//        // set motors to kp*angle error
+//        if (angleError < 0) {
+//          mSetting =  Movement::getMovement(Movement::SPIN, min((int)kp * angleError, -80), 0);
+//        }
+//        else {
+//          mSetting =  Movement::getMovement(Movement::SPIN, max((int)kp * angleError, 80), 0);
+//        }
+//        angleError -= angleDelta / (0.8 * 1.1);
 
   // scan for any commands in the BT or USB serial buffers
   if (Serial.available() > 0) {commandHandler(getSerialCommand());}
