@@ -7,6 +7,22 @@
 
 enum Mode {USB, BT, BOTH};
 
+// enum to run a certain code when BLUE or RED is activated
+enum Color {BLUE, RED};
+
+// Structs for Optosensors and LEDs
+struct Sensor {
+  int pin;
+  int value;
+};
+
+struct Led {
+  int pin;
+  bool state;
+  unsigned long interval;
+  unsigned long lastChanged;
+};
+
 enum programStageName {
   START,                                         //0
   LONG_TRAVERSE_0, // deposit -> collection      //1
@@ -31,8 +47,17 @@ class Logger {
     Mode mode;
     void logln(int);
     void logln(String);
+    void logln(float);
+    void logln(double);
     void log(int);
     void log(String);
+    void log(float);
+    void log(double);
 };
+
+int getLineVal(Sensor, Sensor);
+String getValsString(Sensor, Sensor);
+Color getColorVal(Sensor, Sensor);
+void flashLed(unsigned long, Led&);
 
 #endif

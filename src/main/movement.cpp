@@ -36,7 +36,7 @@ MotorSetting Movement::getMovement(MoveType moveType, int value, int value2) {
     
     case LINE_FOLLOW:
       int speed0 = value;
-      float turn_sharpness = 0.25; // ================================================================ changes based on the weight
+      float turn_sharpness = 0.4; // ================================================================ changes based on the weight
       int speedPlus = speed0 + (int)speed0*turn_sharpness; // changing sharpness of turn 
       int speedMinus = speed0 - (int)speed0*turn_sharpness; // changing sharpness of turn
       MotorSetting mSetting;
@@ -55,8 +55,6 @@ MotorSetting Movement::getMovement(MoveType moveType, int value, int value2) {
           mSetting = (MotorSetting){.speeds = {speed0, speed0}, .directions = {FORWARD, FORWARD}};
           break;
       }
-
-//      lastlinevalue = value2;
       return mSetting;
   }
 }
