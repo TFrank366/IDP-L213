@@ -73,7 +73,11 @@ unsigned long moveStartedTime;
 bool all_crossings_seen = false;
 bool grabStarted = false;
 int clawPos;
+
 Color blockColor;
+// the # of the next place to drop a red or blue block
+int redColorDropZone = 0;
+int blueColorDropZone = 2;
 
 // object for logging 
 Logger l((unsigned long)0, BOTH);
@@ -273,7 +277,7 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
         // raise arm servo in a loop
         for (int i = armServoDown; i >= armServoUp; i--) {
           armServo.write(i);
-          delay(20);
+          delay(10);
         }
         stageShouldAdvance = true;
         return Movement::getMovement(Movement::STOP, 0, 0);
@@ -285,7 +289,7 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
         break;
         
     case LONG_TRAVERSE_1: // ==========================================================================================================================================================
-      l.logln("line follow the second time!");
+      //l.logln("line follow the second time!");
       // check is we've hit a crossing
       if (checkForCrossing(lineVal)) {
         currentCrossingCount++;
@@ -296,10 +300,12 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
           crossings_seen_time = currMillis;
           all_crossings_seen = true;
         }
-        if (currMillis - crossings_seen_time >= 3100) {
+        if ((blockColor == RED && redColorDropZone == 0) || (blockColor == BLUE && blueColorDropZone == 2)) {
           stageShouldAdvance = true;
           return Movement::getMovement(Movement::STOP, 0, 0);
-          
+        } else if (currMillis - crossings_seen_time >= 3100) {
+          stageShouldAdvance = true;
+          return Movement::getMovement(Movement::STOP, 0, 0);
         }
         return Movement::getMovement(Movement::LINE_FOLLOW, fSpeed, lineVal);
       } else {
@@ -311,6 +317,13 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
     case START: // ==========================================================================================================================================================
       // raise the grabber to the highest point
       armServo.write(armServoUp);
+      clawServo.write(clawServoOpen);
+      if (programIteration > 0) {
+        l.logln("going through");
+        stageShouldAdvance = true;
+        return Movement::getMovement(Movement::STOP, 0, 0);
+      }
+      
       if (checkForCrossing(lineVal)) {
         currentCrossingCount++;
         l.logln("start crossing");
@@ -348,7 +361,9 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
 
     case TURN_TO_BLOCK: // ==========================================================================================================================================================
       armServo.write(armServoDown);
+    case MOVE_TO_LINE_FROM_DROP:
     case MOVE_TO_DROP_ZONE:
+    case ALIGN_TO_LINE:
       if (abs(angleError) > 1) {
         // turn to correct angle
         //l.logln("turn");
@@ -392,17 +407,22 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
       l.logln("block dropping");
       clawServo.write(clawServoOpen);
       delay(500);
+      if (blockColor == RED) {
+        redColorDropZone++;
+      } else {
+        blueColorDropZone++;
+      }
       stageShouldAdvance = true;
       return Movement::getMovement(Movement::STOP, 0, 0);
       break;
 
-    case MOVE_TO_LINE_FROM_DROP: // ==========================================================================================================================================================
+     // ==========================================================================================================================================================
       l.logln("move to line");
       break;
      
      case SENSE_BLOCK_COLOR: // ==========================================================================================================================================================
-      Color blockCol = getColorVal(rLDR, bLDR);
-      if (blockCol == BLUE) {
+      blockColor = getColorVal(rLDR, bLDR);
+      if (blockColor == BLUE) {
         //l.logln("blue");
         digitalWrite(gLed.pin, true);
         delay(5100);
@@ -434,7 +454,7 @@ void advanceStage() {
   if (currentStage == MOVE_TO_LINE_FROM_DROP) {
     programIteration++;
   }
-  currentStage = static_cast<programStageName>(currentStage + 1);
+  currentStage = static_cast<programStageName>((currentStage + 1) % 14);
 
   // do initial setup for the stages that need it
   switch (currentStage) {
@@ -459,7 +479,9 @@ void advanceStage() {
       break;
     case MOVE_TO_LINE_FROM_DROP:
       l.logln("<4>"); // this should change
-      
+      break;
+    case ALIGN_TO_LINE:
+      l.logln("<linefwd>");      
   }
   l.logln("stage advanced");
 }

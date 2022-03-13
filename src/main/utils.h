@@ -37,6 +37,7 @@ enum programStageName {
   MOVE_TO_DROP_ZONE,                             //10
   DROP_BLOCK,                                    //11
   MOVE_TO_LINE_FROM_DROP,                        //12
+  ALIGN_TO_LINE                                  //13
 };
 
 class Logger {
