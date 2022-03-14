@@ -8,7 +8,7 @@
 enum Mode {USB, BT, BOTH};
 
 // enum to run a certain code when BLUE or RED is activated
-enum Color {BLUE, RED};
+enum Color {RED, BLUE};
 
 // Structs for Optosensors and LEDs
 struct Sensor {
@@ -29,15 +29,17 @@ enum programStageName {
   TURN_TO_BLOCK,                                 //2
   MOVE_TO_BLOCK, // move slower here             //3
   SENSE_BLOCK_COLOR,                             //4
-  GRAB_BLOCK,                                    //5
-  RAISE_BLOCK,                                   //6
-  MOVE_TO_LINE_FROM_BLOCK,                       //7
-  LONG_TRAVERSE_1, // collection -> deposit      //8
-  LOWER_BLOCK,                                   //9
+  PUSH_BLOCK,                                    //5
+  GRAB_BLOCK,                                    //6
+  RAISE_BLOCK,                                   //7
+  MOVE_TO_LINE_FROM_BLOCK,                       //8
+  LONG_TRAVERSE_1, // collection -> deposit      //9
   MOVE_TO_DROP_ZONE,                             //10
-  DROP_BLOCK,                                    //11
-  MOVE_TO_LINE_FROM_DROP,                        //12
-  ALIGN_TO_LINE                                  //13
+  LOWER_BLOCK,                                   //11
+  DROP_BLOCK,                                    //12
+  MOVE_TO_LINE_FROM_DROP,                        //13
+  ALIGN_TO_LINE,                                 //14
+  STAGE_COUNT                                    //15
 };
 
 class Logger {

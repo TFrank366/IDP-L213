@@ -10,16 +10,10 @@ namespace Movement{
     int directions[2]; // 2 directions, one for each wheel
   };
 
-// for its various methods of motion
-  enum MoveType{
-    STOP,
-    STRAIGHT,
-    TURN,
-    SPIN,
-    LINE_FOLLOW
- };
-
-  MotorSetting getMovement(MoveType, int, int);
+  MotorSetting stop();
+  MotorSetting straight(int);
+  MotorSetting spin(int);
+  MotorSetting lineFollow(int, int);
 }
 
 #endif

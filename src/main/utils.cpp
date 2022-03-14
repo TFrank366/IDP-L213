@@ -76,9 +76,9 @@ void Logger::log(double i) {
 
 int getLineVal(Sensor left, Sensor right) {
   int lineVal = 0;
-  lineVal |= analogRead(right.pin) < 25; // change the read values based on line reading ==============================================================
+  lineVal |= analogRead(right.pin) < 20; // change the read values based on line reading ==============================================================
   //delay(10);
-  lineVal |= (analogRead(left.pin) < 25) << 1; // change the read values based on line reading ==============================================================
+  lineVal |= (analogRead(left.pin) < 20) << 1; // change the read values based on line reading ==============================================================
   return lineVal;
 }
 
@@ -102,12 +102,12 @@ Color getColorVal(Sensor rLDR, Sensor bLDR) {
   }
 }
 
-void flashLed (unsigned long t, Led &led) {
+void flashLed (unsigned long t, Led& led) {
   if (t - led.lastChanged >= led.interval) {
       // save the last time you blinked the LED
       led.lastChanged = t;
       // set the LED with the ledState of the variable:
       digitalWrite(led.pin, !led.state);
-      led.state = led.state;
+      led.state = !led.state;
     }
 }
