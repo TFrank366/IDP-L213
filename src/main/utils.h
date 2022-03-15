@@ -72,14 +72,6 @@ class Logger {
         lastLogTime = nowTime;
       }
     }
-//    void logln(int);
-//    void logln(String);
-//    void logln(float);
-//    void logln(double);
-//    void log(int);
-//    void log(String);
-//    void log(float);
-//    void log(double);
 };
 
 int getLineVal(Sensor, Sensor);

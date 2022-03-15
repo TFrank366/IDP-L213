@@ -27,14 +27,14 @@ const int rLDRPin =              A2; // Protoboard configuration, do not change 
 const int fSpeed =              255; // motor speed for general movement (see movement.cpp) changes based on the weight
 const int sSpeed =              100; // slow motor speed
 const int minTSpeed =           100; // minimum turning speed
-const float velConversion = 0.02052 * sSpeed/70.0; // m/s at 70 fspeed
+const float velInMs = 0.02052 * sSpeed/70.0; // m/s at 70 fspeed
 // parameters for turning =======================================================================
 const float kp =                1.8; // kp for turning
 // servo positions ==============================================================================
-const int armServoUp =         57; // arm up
-const int armServoDown =      115; // arm down
-const int clawServoClosed =   155; // claw closed
-const int clawServoOpen =     130; // claw  open
+const int armServoUp =           57; // arm up
+const int armServoDown =        115; // arm down
+const int clawServoClosed =     155; // claw closed
+const int clawServoOpen =       130; // claw  open
 // ==============================================================================================
 
 
@@ -249,10 +249,10 @@ Movement::MotorSetting minimiseDistanceError() {
   //l.logln("moving forward");
   if (distanceError < 0) {
     mSetting = Movement::straight(-sSpeed); //Movement::getMovement(Movement::STRAIGHT, -sSpeed, 0);
-    distanceError += (float)changeMillis/1000.0 * velConversion;
+    distanceError += (float)changeMillis/1000.0 * velInMs;
   } else {
     mSetting = Movement::straight(sSpeed); //Movement::getMovement(Movement::STRAIGHT, sSpeed, 0);
-    distanceError -= (float)changeMillis/1000.0 * velConversion;
+    distanceError -= (float)changeMillis/1000.0 * velInMs;
   }
   return mSetting;
 }
@@ -390,7 +390,7 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
     case SPIN_180:
     case TURN_TO_BLOCK: // ==========================================================================================================================================================      
     case MOVE_TO_DROP_ZONE:
-    case ALIGN_TO_LINE:
+    
       if (!errorReceived) {
         return Movement::stop();
       } else if (
@@ -408,17 +408,18 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
       }
       return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0); // stops when angle has been reached
       break;
-      
+
+    case ALIGN_TO_LINE:
     case MOVE_TO_LINE_FROM_DROP:
       if (!errorReceived) {
         return Movement::stop();
       } else if (
-        (float)abs(angleError) > 1 || 
-        (fabs(distanceError) > 0 && (float)abs(angleError)*fabs(distanceError) > 1)
+        (float)abs(angleError) > 0.5 || 
+        (fabs(distanceError) > 0 && (float)abs(angleError)*fabs(distanceError) > 0.5)
       ) {
         // turn to correct angle
         return minimiseAngleError();
-      } else if (fabs(distanceError) > 0.05) {
+      } else if (fabs(distanceError) > 0.10) {
         // move to correct distance
         return minimiseDistanceError();
       } else if (errorReceived){
@@ -455,17 +456,15 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
       clawServo.write(clawServoOpen);
       delay(500);
       if (blockColor == RED) {
-        if (redColorDropZone == 0) {redColorDropZone = 1;}
-        else {redColorDropZone = 0;}
+        redColorDropZone++;
       } else {
-        if (blueColorDropZone == 2) {blueColorDropZone = 3;}
-        else {blueColorDropZone = 2;}
+        blueColorDropZone++;
       }
-      armServo.write(armServoUp);
       if (!pushStarted) {
         pushStartedTime = currMillis;
         pushStarted = true;
       } else if (currMillis - pushStartedTime > 500) {
+        armServo.write(armServoUp);
         stageShouldAdvance = true;
         return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0);
       }
@@ -554,9 +553,9 @@ void advanceStage() {
       break;
     case ALIGN_TO_LINE:
       if (programIteration < 3) {
-        currentRequest = "<5>";  
+        currentRequest = "<6>";  
       } else {
-        currentRequest = "<6>";
+        currentRequest = "<5>";
       }
         
       break;  
