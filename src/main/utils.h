@@ -26,6 +26,7 @@ struct Led {
 enum programStageName {
   START,                                         //0
   LONG_TRAVERSE_0, // deposit -> collection      //1
+  SPIN_180,
   TURN_TO_BLOCK,                                 //2
   MOVE_TO_BLOCK, // move slower here             //3
   SENSE_BLOCK_COLOR,                             //4
@@ -44,18 +45,41 @@ enum programStageName {
 
 class Logger {
   public: 
-    Logger (unsigned long, Mode);
+    Logger (unsigned long gap, Mode m) {
+      timeGap = gap;
+      mode = m;
+    }
     unsigned long timeGap;
     unsigned long lastLogTime;
     Mode mode;
-    void logln(int);
-    void logln(String);
-    void logln(float);
-    void logln(double);
-    void log(int);
-    void log(String);
-    void log(float);
-    void log(double);
+
+    template<typename T>
+    void logln(T value) {
+      unsigned long nowTime = millis();
+      if (nowTime - lastLogTime >= timeGap) {
+        if (mode == BOTH || mode == BT) {SerialNina.println(value);}
+        if (mode == BOTH || mode == USB) {Serial.println(value);}
+        lastLogTime = nowTime;
+      }
+    }
+
+    template<typename T>
+    void log(T value) {
+      unsigned long nowTime = millis();
+      if (nowTime - lastLogTime >= timeGap) {
+        if (mode == BOTH || mode == BT) {SerialNina.print(value);}
+        if (mode == BOTH || mode == USB) {Serial.print(value);}
+        lastLogTime = nowTime;
+      }
+    }
+//    void logln(int);
+//    void logln(String);
+//    void logln(float);
+//    void logln(double);
+//    void log(int);
+//    void log(String);
+//    void log(float);
+//    void log(double);
 };
 
 int getLineVal(Sensor, Sensor);

@@ -3,76 +3,73 @@
 #include <SPI.h>
 #include <Arduino.h>
 
-Logger::Logger (unsigned long gap, Mode m) {
-  timeGap = gap;
-  mode = m;
-}
 
-// All of this code below  takes care of BT + serial communication and printing etc
-void Logger::logln(int i) {
-  unsigned long nowTime = millis();
-  if (nowTime - lastLogTime >= timeGap) {
-    if (mode == BOTH || mode == BT) {SerialNina.println(i);}
-    if (mode == BOTH || mode == USB) {Serial.println(i);}
-    lastLogTime = nowTime;
-  }
-}
-void Logger::logln(String s) {
-  unsigned long nowTime = millis();
-  if (nowTime - lastLogTime >= timeGap) {
-    if (mode == BOTH || mode == BT) {SerialNina.println(s);}
-    if (mode == BOTH || mode == USB) {Serial.println(s);}
-    lastLogTime = nowTime;
-  }
-}
-void Logger::logln(float s) {
-  unsigned long nowTime = millis();
-  if (nowTime - lastLogTime >= timeGap) {
-    if (mode == BOTH || mode == BT) {SerialNina.println(s);}
-    if (mode == BOTH || mode == USB) {Serial.println(s);}
-    lastLogTime = nowTime;
-  }
-}
-void Logger::logln(double s) {
-  unsigned long nowTime = millis();
-  if (nowTime - lastLogTime >= timeGap) {
-    if (mode == BOTH || mode == BT) {SerialNina.println(s);}
-    if (mode == BOTH || mode == USB) {Serial.println(s);}
-    lastLogTime = nowTime;
-  }
-}
-void Logger::log(int i) {
-  unsigned long nowTime = millis();
-  if (nowTime - lastLogTime >= timeGap) {
-    if (mode == BOTH || mode == BT) {SerialNina.print(i);}
-    if (mode == BOTH || mode == USB) {Serial.print(i);}
-    lastLogTime = nowTime;
-  }
-}
-void Logger::log(String s) {
-  unsigned long nowTime = millis();
-  if (nowTime - lastLogTime >= timeGap) {
-    if (mode == BOTH || mode == BT) {SerialNina.print(s);}
-    if (mode == BOTH || mode == USB) {Serial.print(s);}
-    lastLogTime = nowTime;
-  }
-}
-void Logger::log(float i) {
-  unsigned long nowTime = millis();
-  if (nowTime - lastLogTime >= timeGap) {
-    if (mode == BOTH || mode == BT) {SerialNina.print(i);}
-    if (mode == BOTH || mode == USB) {Serial.print(i);}
-    lastLogTime = nowTime;
-  }
-}
-void Logger::log(double i) {
-  unsigned long nowTime = millis();
-  if (nowTime - lastLogTime >= timeGap) {
-    if (mode == BOTH || mode == BT) {SerialNina.print(i);}
-    if (mode == BOTH || mode == USB) {Serial.print(i);}
-    lastLogTime = nowTime;
-  }
-}
+
+//// All of this code below  takes care of BT + serial communication and printing etc
+//void Logger::logln(int i) {
+//  unsigned long nowTime = millis();
+//  if (nowTime - lastLogTime >= timeGap) {
+//    if (mode == BOTH || mode == BT) {SerialNina.println(i);}
+//    if (mode == BOTH || mode == USB) {Serial.println(i);}
+//    lastLogTime = nowTime;
+//  }
+//}
+//void Logger::logln(String s) {
+//  unsigned long nowTime = millis();
+//  if (nowTime - lastLogTime >= timeGap) {
+//    if (mode == BOTH || mode == BT) {SerialNina.println(s);}
+//    if (mode == BOTH || mode == USB) {Serial.println(s);}
+//    lastLogTime = nowTime;
+//  }
+//}
+//void Logger::logln(float s) {
+//  unsigned long nowTime = millis();
+//  if (nowTime - lastLogTime >= timeGap) {
+//    if (mode == BOTH || mode == BT) {SerialNina.println(s);}
+//    if (mode == BOTH || mode == USB) {Serial.println(s);}
+//    lastLogTime = nowTime;
+//  }
+//}
+//void Logger::logln(double s) {
+//  unsigned long nowTime = millis();
+//  if (nowTime - lastLogTime >= timeGap) {
+//    if (mode == BOTH || mode == BT) {SerialNina.println(s);}
+//    if (mode == BOTH || mode == USB) {Serial.println(s);}
+//    lastLogTime = nowTime;
+//  }
+//}
+//void Logger::log(int i) {
+//  unsigned long nowTime = millis();
+//  if (nowTime - lastLogTime >= timeGap) {
+//    if (mode == BOTH || mode == BT) {SerialNina.print(i);}
+//    if (mode == BOTH || mode == USB) {Serial.print(i);}
+//    lastLogTime = nowTime;
+//  }
+//}
+//void Logger::log(String s) {
+//  unsigned long nowTime = millis();
+//  if (nowTime - lastLogTime >= timeGap) {
+//    if (mode == BOTH || mode == BT) {SerialNina.print(s);}
+//    if (mode == BOTH || mode == USB) {Serial.print(s);}
+//    lastLogTime = nowTime;
+//  }
+//}
+//void Logger::log(float i) {
+//  unsigned long nowTime = millis();
+//  if (nowTime - lastLogTime >= timeGap) {
+//    if (mode == BOTH || mode == BT) {SerialNina.print(i);}
+//    if (mode == BOTH || mode == USB) {Serial.print(i);}
+//    lastLogTime = nowTime;
+//  }
+//}
+//void Logger::log(double i) {
+//  unsigned long nowTime = millis();
+//  if (nowTime - lastLogTime >= timeGap) {
+//    if (mode == BOTH || mode == BT) {SerialNina.print(i);}
+//    if (mode == BOTH || mode == USB) {Serial.print(i);}
+//    lastLogTime = nowTime;
+//  }
+//}
 
 int getLineVal(Sensor left, Sensor right) {
   int lineVal = 0;
