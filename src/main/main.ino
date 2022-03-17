@@ -12,8 +12,8 @@
 const int oLedPin =             4; // Protoboard configuration, do not change unnecessarily
 const int rLedPin =             3; // Protoboard configuration, do not change unnecessarily
 const int gLedPin =             5; // Protoboard configuration, do not change unnecessarily
-const int armServoPin =         9; // check again
-const int clawServoPin =       10; // check again
+const int armServoPin =        10; // check again
+const int clawServoPin =        9; // check again
 const int distSensorPin =       7; // Protoboard configuration, do not change unnecessarily
 // analogue pins ================================================================================
 // avoid 4 and 5
@@ -25,13 +25,13 @@ const int bLDRPin =              A3; // Protoboard configuration, do not change 
 const int rLDRPin =              A2; // Protoboard configuration, do not change unnecessarily
 // robot speeds ================================================================================
 const int fSpeed =              255; // motor speed for general movement (see movement.cpp) changes based on the weight
-const int sSpeed =              100; // slow motor speed
+const int sSpeed =              150; // slow motor speed
 const int minTSpeed =           100; // minimum turning speed
-const float velInMs = 0.02052 * sSpeed/70.0; // m/s at 70 fspeed
+//const float velInMs = 0.02052 * sSpeed/70.0; // m/s at 70 fspeed
 // parameters for turning =======================================================================
 const float kp =                1.8; // kp for turning
 // servo positions ==============================================================================
-const int armServoUp =           57; // arm up
+const int armServoUp =           58; // arm up
 const int armServoDown =        115; // arm down
 const int clawServoClosed =     155; // claw closed
 const int clawServoOpen =       130; // claw  open
@@ -43,7 +43,7 @@ unsigned long prevOLedChangeMillis = 0;
 unsigned long prevMillis = 0;
 unsigned long currMillis = 0;
 unsigned long changeMillis = 0;
-const unsigned long oLedInterval = 500; // for 2Hz flashing of oLed
+const unsigned long oLedInterval = 250; // for 2Hz flashing of oLed
 unsigned long startTime;
 
 // for use by the angle integration TEMP
@@ -118,7 +118,7 @@ void setup() {
   // setup serial link and bluetooth
   Serial.begin(115200);
   Serial.println("Serial up");
-  Serial.setTimeout(100);
+  Serial.setTimeout(50);
 
   // initialise the motors
   AFMS.begin();
@@ -127,7 +127,7 @@ void setup() {
   pinMode(NINA_RESETN, OUTPUT);
   digitalWrite(NINA_RESETN, LOW);
   SerialNina.begin(115200);
-  SerialNina.setTimeout(100);
+  SerialNina.setTimeout(50);
 
   // initialise IMU for gyroscope
   IMU.begin();
@@ -166,8 +166,12 @@ void setup() {
   
   programIteration = 0;
   currentStage = START;
+  //advanceStage();
   armServo.write(armServoUp);
   clawServo.write(clawServoOpen);
+
+//  l.logln(speedToReal(70));
+//  l.logln(speedToReal(150));
 }
 
 // general function to apply a motorSetting struct onto the motors
@@ -249,10 +253,10 @@ Movement::MotorSetting minimiseDistanceError() {
   //l.logln("moving forward");
   if (distanceError < 0) {
     mSetting = Movement::straight(-sSpeed); //Movement::getMovement(Movement::STRAIGHT, -sSpeed, 0);
-    distanceError += (float)changeMillis/1000.0 * velInMs;
+    distanceError += (float)changeMillis/1000.0 * speedToReal(sSpeed);
   } else {
     mSetting = Movement::straight(sSpeed); //Movement::getMovement(Movement::STRAIGHT, sSpeed, 0);
-    distanceError -= (float)changeMillis/1000.0 * velInMs;
+    distanceError -= (float)changeMillis/1000.0 * speedToReal(sSpeed);
   }
   return mSetting;
 }
@@ -267,34 +271,21 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
     case GRAB_BLOCK: // had to change order because it works better, somehow =======================================================================================================================
       //l.logln("block grabbed");
       clawServo.write(clawServoClosed);
-      delay(300);
+      delay(500);
       stageShouldAdvance = true;
-      return Movement::stop();
-//       if (!grabStarted) {
-//         clawServo.write(clawServoOpen);
-//         clawPos = clawServoOpen;
-//         grabStarted = true;
-//       } else if (clawPos >= clawServoClosed){
-//         delay(2000);
-//         stageShouldAdvance = true;
-//         return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0);
-//       } else {
-//         clawPos += 1;
-//         clawServo.write(clawPos);//max(clawPos, clawServoOpen));
-//       }
-        
-        break;
+      return Movement::stop();        
+      break;
 
-      case PUSH_BLOCK:
-        if (!pushStarted) {
-          pushStartedTime = currMillis;
-          pushStarted = true;
-        } else if (currMillis - pushStartedTime > 1500) {
-          stageShouldAdvance = true;
-          return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0);
-        }
-        return Movement::straight(-sSpeed); //Movement::getMovement(Movement::STRAIGHT, -90, 0);
-        break;
+    case PUSH_BLOCK:
+      if (!pushStarted) {
+        pushStartedTime = currMillis;
+        pushStarted = true;
+      } else if (currMillis - pushStartedTime > 1000) {
+        stageShouldAdvance = true;
+        return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0);
+      }
+      return Movement::straight(-sSpeed); //Movement::getMovement(Movement::STRAIGHT, -90, 0);
+      break;
 
       case RAISE_BLOCK: // ==========================================================================================================================================================
         //l.logln("block raised");
@@ -303,6 +294,7 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
           armServo.write(i);
           delay(10);
         }
+        delay(500);
         stageShouldAdvance = true;
         return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0);
         break;
@@ -324,11 +316,13 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
           crossings_seen_time = currMillis;
           all_crossings_seen = true;
         }
-        if (((blockColor == RED && redColorDropZone == 0) || (blockColor == BLUE && blueColorDropZone == 2)) && currMillis - crossings_seen_time >= 100) {
+        if (((blockColor == RED && redColorDropZone == 0) || (blockColor == BLUE && blueColorDropZone == 2)) && currMillis - crossings_seen_time >= 170) {
           stageShouldAdvance = true;
           return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0);
         } else if (currMillis - crossings_seen_time >= 2700) {
           stageShouldAdvance = true;
+          Serial.print("going to: ");
+          Serial.println(redColorDropZone);
           return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0);
         }
       }
@@ -356,7 +350,7 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
         stageShouldAdvance = true;
         if (programIteration > 3) {
           // end the program
-          l.logln("done, yay");
+          l.logln("program complete");
           programHalted = true;
         }
         return Movement::stop();
@@ -377,7 +371,7 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
           crossings_seen_time = currMillis;
           all_crossings_seen = true;
         }
-        if (currMillis - crossings_seen_time >= 3100) {
+        if (currMillis - crossings_seen_time >= 2900 || (programIteration > 0 && currMillis - crossings_seen_time >= 2500)) {
           stageShouldAdvance = true;
           return Movement::stop();
         }
@@ -409,7 +403,6 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
       return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0); // stops when angle has been reached
       break;
 
-    case ALIGN_TO_LINE:
     case MOVE_TO_LINE_FROM_DROP:
       if (!errorReceived) {
         return Movement::stop();
@@ -420,6 +413,33 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
         // turn to correct angle
         return minimiseAngleError();
       } else if (fabs(distanceError) > 0.10) {
+        // move to correct distance
+        return minimiseDistanceError();
+      } else if (errorReceived){
+        // error has been minimised 
+        stageShouldAdvance = true;
+        if (programIteration >= 3) {
+          // end of program
+          programHalted = true;
+        }
+      }
+      return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0); // stops when angle has been reached
+      break;
+
+    case ALIGN_TO_LINE:
+      if (programIteration >= 3) {
+        stageShouldAdvance = true;
+        return Movement::stop();
+      }
+      if (!errorReceived) {
+        return Movement::stop();
+      } else if (
+        (float)abs(angleError) > 0.4 || 
+        (fabs(distanceError) > 0 && (float)abs(angleError)*fabs(distanceError) > 0.4)
+      ) {
+        // turn to correct angle
+        return minimiseAngleError();
+      } else if (fabs(distanceError) > 0.30) {
         // move to correct distance
         return minimiseDistanceError();
       } else if (errorReceived){
@@ -436,15 +456,37 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
           stageShouldAdvance = true;
           return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0);
         }
-        return Movement::straight(-sSpeed); //Movement::getMovement(Movement::STRAIGHT, -70, 0);
+        
+        if (!pushStarted) {
+          pushStartedTime = currMillis;
+          pushStarted = true;
+        } else if (currMillis - pushStartedTime > 4000 && currMillis - pushStartedTime <= 5000) {
+          return Movement::straight(-70);
+        } else if (currMillis - pushStartedTime > 5000) {
+          // timeout, block will be on to side of distance sensor
+          clawServo.write(clawServoClosed);
+          stageShouldAdvance = true;
+          return Movement::stop();
+        }
+        
+        if (currMillis%1000 < 500) {
+          // sweep ccw
+          return Movement::combined(-70 , 14);
+        } else {
+          // sweep cw
+          return Movement::combined(-70 , -15);
+        }
+        //return Movement::straight(-70); //Movement::getMovement(Movement::STRAIGHT, -70, 0);
         break;
 
      case LOWER_BLOCK: // ==========================================================================================================================================================
       //l.logln("lowered block");
       for (int i = armServoUp; i <= armServoDown; i++) {
         armServo.write(i);
-        delay(20);
+        delay(15);
       }
+      delay(500);
+      clawServo.write(clawServoOpen);
       // lower arm servo in a loop
       stageShouldAdvance = true;
       return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0);
@@ -453,18 +495,19 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
 
      case DROP_BLOCK: // ==========================================================================================================================================================
       //l.logln("block dropping");
-      clawServo.write(clawServoOpen);
-      delay(500);
-      if (blockColor == RED) {
-        redColorDropZone++;
-      } else {
-        blueColorDropZone++;
-      }
+      
       if (!pushStarted) {
         pushStartedTime = currMillis;
         pushStarted = true;
       } else if (currMillis - pushStartedTime > 500) {
         armServo.write(armServoUp);
+        if (blockColor == RED) {
+          redColorDropZone += 1;
+          //if (redColorDropZone == 2) redColorDropZone = 0;
+        } else {
+          blueColorDropZone += 1;
+          //if (blueColorDropZone == 4) blueColorDropZone = 2;
+        }
         stageShouldAdvance = true;
         return Movement::stop(); //Movement::getMovement(Movement::STOP, 0, 0);
       }
@@ -476,7 +519,13 @@ Movement::MotorSetting performStage(programStageName stageName, int lineVal) {
       break;
      
      case SENSE_BLOCK_COLOR: // ==========================================================================================================================================================
+      delay(100);
       blockColor = getColorVal(rLDR, bLDR);
+      if (redColorDropZone >= 1) {
+        blockColor = BLUE;
+      } else if (blueColorDropZone >= 3) {
+        blockColor = RED;
+      }
       if (blockColor == BLUE) {
         //l.logln("blue");
         digitalWrite(gLed.pin, true);
@@ -511,7 +560,7 @@ void advanceStage() {
   lastRequestTime = 0;
   lastErrorReceivedTime = 0;
   currentRequest = "";
-  if (currentStage == MOVE_TO_LINE_FROM_DROP) {
+  if (currentStage == ALIGN_TO_LINE) {
     programIteration++;
   }
   currentStage = static_cast<programStageName>((currentStage + 1) % STAGE_COUNT);
@@ -537,6 +586,8 @@ void advanceStage() {
       break;
     case MOVE_TO_DROP_ZONE:
       if (blockColor == RED) {
+        Serial.print("going to: ");
+        Serial.println(redColorDropZone);
         currentRequest = "<" + String(redColorDropZone) + ">";
       } else {
         currentRequest = "<" + String(blueColorDropZone) + ">";
@@ -550,14 +601,15 @@ void advanceStage() {
       break;
     case MOVE_TO_LINE_FROM_DROP:
       currentRequest = "<4>"; // this should change
-      break;
-    case ALIGN_TO_LINE:
       if (programIteration < 3) {
-        currentRequest = "<6>";  
+        currentRequest = "<4>";  
       } else {
+        // for last one, get into box
         currentRequest = "<5>";
       }
-        
+      break;
+    case ALIGN_TO_LINE:
+      currentRequest = "<6>";
       break;  
   }
   l.logln("stage advanced");
@@ -577,42 +629,49 @@ String getSerialCommand(String& command) {
 
 // grabs string from the bluetooth serial
 String getBTSerialCommand(String& command) {
-  //l.logln("comm");
-  command = SerialNina.readString();
+  //l.logln(1);
+  command = (String&&)SerialNina.readString();
   return command;
 }
 
 // What does every input command to the Arduino do (raises flags that have corresponding actions)
 void commandHandler(const String& command) {
   //l.logln("command received");
+  //l.logln(2);
 
   if (command == "stop" || command == "stopstop" || command == "<stop>") {
     programHalted = true;
     l.log("time: ");
     l.logln((int)(currMillis-startTime));
   } else if (command == "go" || command == "gogo" || command == "<go>") {
+    l.logln("start");
     programHalted = false;
     startTime = currMillis;
   } else if (command.startsWith("<")) {
+    //l.logln(3);
     // received error
     int sepInd = command.indexOf(",");
+    //l.logln(4);
     angleError = command.substring(1, sepInd).toFloat();
+    //l.logln(5);
     distanceError = command.substring(sepInd + 1, command.length() - 1).toFloat();
+    //l.logln(6);
     if (currentStage == MOVE_TO_DROP_ZONE) {
       distanceError += 0.265;
     } else if (currentStage == TURN_TO_BLOCK) {
       distanceError += 0.30 ;
     }
-    l.logln(angleError);
-    l.logln(distanceError);
+    //l.logln(angleError);
+    //l.logln(distanceError);
     errorReceived = true;
     lastErrorReceivedTime = currMillis;
+    //l.logln(7);
   }
 }
 
 void sendRequest(const String& req) {
   if (req != "") {
-    l.logln("req sent");
+    //l.logln("req sent");
     l.logln(req);
     lastRequestTime = currMillis; // comment out
     errorReceived = false;
@@ -624,14 +683,14 @@ void loop() {
   //l.logln("a"); // to check if the loop is running
   currMillis = millis();
   changeMillis = currMillis - prevMillis;  
-  //kl.logln(getValsString(leftSensor, rightSensor));
+  
   if (programHalted) {
     setMotors(Movement::stop()); //Movement::getMovement(Movement::STOP, 0, 0));
   } else {
     if (stageShouldAdvance) {
       advanceStage();
     }
-    if (currMillis - lastRequestTime >= 7000) { // (errorReceived && (currMillis - lastErrorReceivedTime >= 10000)) {
+    if (currMillis - lastRequestTime >= 5000) { // (errorReceived && (currMillis - lastErrorReceivedTime >= 10000)) {
       sendRequest(currentRequest);
     }
     int lineVal = getLineVal(leftSensor, rightSensor);
@@ -643,7 +702,13 @@ void loop() {
    }
 
   // scan for any commands in the BT or USB serial buffers
-  if (Serial.available() > 0) {commandHandler(getSerialCommand(command));}
-  if (SerialNina.available() > 0) {commandHandler(getBTSerialCommand(command));}
+  if (Serial.peek() != -1) {
+    //l.logln(0);
+    commandHandler(getSerialCommand(command));
+  }
+  if (SerialNina.peek() != -1) {
+    //l.logln(0);
+    commandHandler(getBTSerialCommand(command));
+  }
   prevMillis = currMillis;
 }

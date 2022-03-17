@@ -49,4 +49,14 @@ namespace Movement {
     }
     return mSetting;
   }
+
+  MotorSetting combined(int value, int turn) {
+    int speedRight = value + turn; // changing sharpness of turn 
+    int speedLeft = value - turn; // changing sharpness of turn
+    if (speedLeft < 0 && speedRight < 0) {
+      return (MotorSetting){.speeds = {abs(speedLeft), abs(speedRight)}, .directions = {BACKWARD, BACKWARD}};
+    }
+    // add more cases
+    return (MotorSetting){.speeds = {speedLeft, speedRight}, .directions = {FORWARD, FORWARD}};
+  }
 }

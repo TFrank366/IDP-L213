@@ -40,3 +40,13 @@ void flashLed (unsigned long t, Led& led) {
       led.state = !led.state;
     }
 }
+
+// linear map based on
+// 70  -> 0.02052 m/s
+// 150 -> 0.07718 m/s
+
+float speedToReal(int s) {
+  if (s == 70) return 0.02052;
+  if (s == 150) return 0.078;
+  return (s-70)/(150-70) * (0.078-0.02052) + 0.02052;
+}

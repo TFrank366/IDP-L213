@@ -14,6 +14,7 @@ namespace Movement{
   MotorSetting straight(int);
   MotorSetting spin(int);
   MotorSetting lineFollow(int, int);
+  MotorSetting combined(int, int);
 }
 
 #endif

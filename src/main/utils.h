@@ -26,21 +26,21 @@ struct Led {
 enum programStageName {
   START,                                         //0
   LONG_TRAVERSE_0, // deposit -> collection      //1
-  SPIN_180,
-  TURN_TO_BLOCK,                                 //2
-  MOVE_TO_BLOCK, // move slower here             //3
-  SENSE_BLOCK_COLOR,                             //4
-  PUSH_BLOCK,                                    //5
-  GRAB_BLOCK,                                    //6
-  RAISE_BLOCK,                                   //7
-  MOVE_TO_LINE_FROM_BLOCK,                       //8
-  LONG_TRAVERSE_1, // collection -> deposit      //9
-  MOVE_TO_DROP_ZONE,                             //10
-  LOWER_BLOCK,                                   //11
-  DROP_BLOCK,                                    //12
-  MOVE_TO_LINE_FROM_DROP,                        //13
-  ALIGN_TO_LINE,                                 //14
-  STAGE_COUNT                                    //15
+  SPIN_180,                                      //2
+  TURN_TO_BLOCK,                                 //3
+  MOVE_TO_BLOCK, // move slower here             //4
+  SENSE_BLOCK_COLOR,                             //5
+  PUSH_BLOCK,                                    //6
+  GRAB_BLOCK,                                    //7
+  RAISE_BLOCK,                                   //8
+  MOVE_TO_LINE_FROM_BLOCK,                       //9
+  LONG_TRAVERSE_1, // collection -> deposit      //10
+  MOVE_TO_DROP_ZONE,                             //11
+  LOWER_BLOCK,                                   //12
+  DROP_BLOCK,                                    //13
+  MOVE_TO_LINE_FROM_DROP,                        //14
+  ALIGN_TO_LINE,                                 //15
+  STAGE_COUNT                                    //16
 };
 
 class Logger {
@@ -78,5 +78,6 @@ int getLineVal(Sensor, Sensor);
 String getValsString(Sensor, Sensor);
 Color getColorVal(Sensor, Sensor);
 void flashLed(unsigned long, Led&);
+float speedToReal(int);
 
 #endif
