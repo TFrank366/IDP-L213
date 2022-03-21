@@ -5,8 +5,6 @@
 #define UTILS_H
 #include <Arduino.h>
 
-enum Mode {USB, BT, BOTH};
-
 // enum to run a certain code when BLUE or RED is activated
 enum Color {RED, BLUE};
 
@@ -23,6 +21,7 @@ struct Led {
   unsigned long lastChanged;
 };
 
+// an enum for keeping track of program stages
 enum programStageName {
   START,                                         //0
   LONG_TRAVERSE_0, // deposit -> collection      //1
@@ -43,6 +42,10 @@ enum programStageName {
   STAGE_COUNT                                    //16
 };
 
+// for logger
+enum Mode {USB, BT, BOTH};
+
+// serial logger class with a configurable delay between sends to prevent overloading the bluetooth connection
 class Logger {
   public: 
     Logger (unsigned long gap, Mode m) {
@@ -74,10 +77,18 @@ class Logger {
     }
 };
 
+// for retrieving data from the line sensors
 int getLineVal(Sensor, Sensor);
 String getValsString(Sensor, Sensor);
+
+// retreives the colour that the colour sensor sees
 Color getColorVal(Sensor, Sensor);
+
+// flashes an led supplied
 void flashLed(unsigned long, Led&);
+
+// converts motor speed [0, 255] into speed in m/s
+// callibrated at 70 and 150 speed
 float speedToReal(int);
 
 #endif

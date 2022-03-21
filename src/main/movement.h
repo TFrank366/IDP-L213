@@ -5,6 +5,8 @@
 #define MOVEMENT_H
 
 namespace Movement{
+  // struct used to pass around settings for the motors
+  // the arrays are in order [left, right]
   struct MotorSetting {
     int speeds[2]; // 2 speeds, one for each wheel
     int directions[2]; // 2 directions, one for each wheel
